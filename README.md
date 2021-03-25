@@ -1,2 +1,7 @@
-# mydocker
-Files the docker images
+# MyDocker
+
+Repositorio destinado al almacenamiento de distintos DockerFiles's
+
+---
+
+[Martin Lujan - 2021 ](https://www.linkedin.com/in/martinlujan-/)
