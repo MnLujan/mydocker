@@ -61,7 +61,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
 
 #Compilo Asterisk en Realtime
 RUN cd /usr/src/ \
-        && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}}-current.tar.gz \
+        && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}-current.tar.gz \
         && tar xfz asterisk-* \
         && rm -f asterisk-*.tar.gz \
 	&& mv asterisk-* asterisk \
