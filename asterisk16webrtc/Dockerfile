@@ -61,7 +61,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
 
 #Compilo Asterisk en Realtime
 RUN cd /usr/src/ \
-        && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}}-current.tar.gz \
+        && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}-current.tar.gz \
         && tar xfz asterisk-* \
         && rm -f asterisk-*.tar.gz \
 	&& mv asterisk-* asterisk \
@@ -70,7 +70,7 @@ RUN cd /usr/src/ \
         && contrib/scripts/install_prereq install \
         && ./configure --libdir=/usr/lib --prefix=/usr --with-pjproject-bundled --with-jansson-bundled --with-ssl=ssl --with-srtp CFLAGS='-O2 -DNDEBUG' \
         && make menuselect/menuselect menuselect-tree menuselect.makeopts \
-        && menuselect/menuselect --disable BUILD_NATIVE --enable app_confbridge --disable app_fax --enable app_macro --enable codec_silk --enable format_mp3 --enable BETTER_BACKTRACES --disable FILE_STORAGE --enable ODBC_STORAGE --enable cdr_odbc --enable pbx_realtime \
+        && menuselect/menuselect --disable BUILD_NATIVE --enable app_confbridge --disable app_fax --enable app_macro --enable codec_silk --enable format_mp3 --enable BETTER_BACKTRACES \
         && make \
         && make install \
 	&& make samples \
@@ -105,10 +105,10 @@ RUN cd /usr/src \
 
 #Opus codecs
 RUN cd /usr/src \
-        && wget -O codec_opus.tar.gz http://downloads.digium.com/pub/telephony/codec_opus/asterisk-${Asterisk}}.0/x86-64/codec_opus-${Asterisk}}.0_current-x86_64.tar.gz \
+        && wget -O codec_opus.tar.gz http://downloads.digium.com/pub/telephony/codec_opus/asterisk-${Asterisk}.0/x86-64/codec_opus-${Asterisk}.0_current-x86_64.tar.gz \
         && tar -xvzf codec_opus.tar.gz \
         && rm -f codec_opus.tar.gz \
-        && cd codec_opus-${Asterisk}}* \
+        && cd codec_opus-${Asterisk}* \
         && cp codec_opus.so /usr/lib/asterisk/modules \
         && cp format_ogg_opus.so /usr/lib/asterisk/modules \
         && cp codec_opus_config-en_US.xml /var/lib/asterisk/documentation/thirdparty \
