@@ -105,4 +105,4 @@ if [ "$SIP_USER_AGENT" = '_USER_AGENT_' ] && [ "$ASTERISK_USER_AGENT" != '' ] &&
   sed -i "s/_SIP_LOCAL_NET_/${ASTERISK_SIP_LOCAL_NET01}\/${ASTERISK_SIP_LOCAL_NET02}/g"  "/etc/asterisk/sip.conf"
 fi
 
-/usr/sbin/asterisk -f -U root -G root
+exec "$@"

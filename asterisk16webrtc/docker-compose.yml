@@ -1,9 +1,9 @@
-version: '1.0'
+version: '3.3'
 services: 
 
   asterisk:
     container_name: asterisk16
-    image: mnlujan/asterisk16webrtc:latest
+    image: mnlujan/asterisk16webrtc:2.0
     volumes: 
       - /etc/localtime:/etc/localtime:ro
       - ./user-data/etc/asterisk:/etc/asterisk
@@ -15,6 +15,11 @@ services:
       - certbot
     restart: always
     network_mode: host
+    ports:
+      - 8089:8089
+      - 8088:8088
+      - 5060:5060
+      - 5061:5061
 
   certbot:
     container_name: certbot
@@ -27,3 +32,20 @@ services:
       - "email=${EMAIL}"
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     network_mode: host
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:latest
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock 
+      - /portainer_data:/data
+      - ./user-data/etc/letsencrypt:/etc/letsencrypt
+    ports:
+      - 443:9000
+    network_mode: host
+    command:
+      --ssl
+      --sslcert /etc/letsencrypt/live/certificate/fullchain.pem
+      --sslkey /etc/letsencrypt/live/certificate/privkey.pem
+

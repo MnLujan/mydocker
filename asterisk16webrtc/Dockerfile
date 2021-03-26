@@ -3,7 +3,7 @@ FROM debian:buster-slim AS compiler
 
 LABEL maintainer="Martin Lujan <mlujan@voipgroup.com>"
 
-ENV DEBIAN_FRONT=noninteractive\
+ENV DEBIAN_FRONTEND=noninteractive\
         Asterisk=16
 
 #Actualizo los repos y OS
@@ -61,7 +61,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
 
 #Compilo Asterisk en Realtime
 RUN cd /usr/src/ \
-        && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}-current.tar.gz \
+        && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}}-current.tar.gz \
         && tar xfz asterisk-* \
         && rm -f asterisk-*.tar.gz \
 	&& mv asterisk-* asterisk \
@@ -169,9 +169,12 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         uuid-dev \
         && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 
-#Copio los archivos de config y binarios compilados anteriormente
+### Usuario asterisk
+RUN addgroup --gid 500 asterisk \
+        && adduser --uid 500 --gid 500 --gecos "Asterisk User" --disabled-password asterisk 
 
-COPY ./etc/* /etc
+#Copio los archivos de config y binarios compilados anteriormente
+COPY ./config/ /etc
 
 COPY --from=compiler --chown=asterisk:asterisk /usr/lib/libasterisk* /usr/lib/
 COPY --from=compiler --chown=asterisk:asterisk /usr/lib/asterisk/ /usr/lib/asterisk/
@@ -181,13 +184,16 @@ COPY --from=compiler --chown=asterisk:asterisk /usr/sbin/asterisk /usr/sbin/aste
 COPY --from=compiler --chown=asterisk:asterisk /etc/asterisk/ /etc/asterisk/
 COPY --from=compiler --chown=asterisk:asterisk /etc/init.d/asterisk /etc/init.d/
 COPY --from=compiler --chown=asterisk:asterisk /var/lib/asterisk/ /var/lib/asterisk/
-COPY --from=compiler /usr/local/sbin/a /usr/local/sbin/a
+COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/ast
 
 #### Pagina web
 RUN cd /var/lib/asterisk/ \
         && rm -Rf static-http/* 
 
 COPY ./web/ /var/lib/asterisk/static-http/
+
+# Cambio permisos
+RUN chmod 744 /var/lib/asterisk/static-http/*
 
 
 EXPOSE 5060 5061 5160 5161 8088 8089 10000-20000/udp 10000-20000/tcp
@@ -216,3 +222,5 @@ RUN cp -fra /etc/asterisk /etc/asterisk.org \
 WORKDIR /etc/asterisk
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
+
+CMD ["/usr/sbin/asterisk", "-f", "-U", "asterisk", "-G", "asterisk"]
