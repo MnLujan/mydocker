@@ -1,6 +1,6 @@
 # MyDocker
 
-Repositorio destinado al almacenamiento de distintos DockerFiles's
+Repositorio destinado al almacenamiento de distintos DockerFiles
 
 ---
 
