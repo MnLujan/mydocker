@@ -1,6 +1,6 @@
-FROM archlinux:base
+FROM debian:buster-slim
 
-RUN pacman -Sy certbot --noconfirm
+RUN apt install -y certbot
 
 COPY ./certbot.sh /certbot.sh
 

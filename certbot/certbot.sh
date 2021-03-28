@@ -2,9 +2,9 @@
 TEMPfile="/tmp/cert_cron.txt"
 /bin/echo "[Centrex5] Renovacion de certificados: " > "${TEMPfile}"
 
-/usr/bin/certbot --version >> "${TEMPfile}"
+/usr/bin/certbot --version > "${TEMPfile}"
 
-/usr/bin/certbot certonly --dry-run --noninteractive --force-renewal --webroot -w /etc/letsencrypt/ -d "${domains}" >> "${TEMPfile}" 2>&1
+/usr/bin/certbot certonly --dry-run --noninteractive --force-renewal --webroot -w /etc/letsencrypt/ -d floyd.voipgroup.com >> "${TEMPfile}" 2>&1
 
 /bin/echo "[Centrex5]" >> "${TEMPfile}"
 
