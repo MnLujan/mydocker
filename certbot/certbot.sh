@@ -4,7 +4,7 @@
 
 /usr/bin/certbot --version
 
-/usr/bin/certbot certonly --dry-run --noninteractive --verbose --quiet --standalone  -w /etc/letsencrypt/ -d floyd.voipgroup.com
+/usr/bin/certbot certonly --dry-run --noninteractive --verbose --quiet --standalone -d floyd.voipgroup.com
 
 /bin/echo "[Centrex5]"
 
