@@ -1,12 +1,12 @@
 #!/usr/bin/bash
-TEMPfile="/tmp/cert_cron.txt"
-/bin/echo "[Centrex5] Renovacion de certificados: " > "${TEMPfile}"
+#TEMPfile="/tmp/cert_cron.txt"
+/bin/echo "[Centrex5] Renovacion de certificados: "
 
-/usr/bin/certbot --version > "${TEMPfile}"
+/usr/bin/certbot --version
 
-/usr/bin/certbot certonly --dry-run --noninteractive --force-renewal --webroot -w /etc/letsencrypt/ -d floyd.voipgroup.com >> "${TEMPfile}" 2>&1
+/usr/bin/certbot certonly --dry-run --noninteractive --verbose --quiet --standalone  -w /etc/letsencrypt/ -d floyd.voipgroup.com
 
-/bin/echo "[Centrex5]" >> "${TEMPfile}"
+/bin/echo "[Centrex5]"
 
 #/usr/sbin/service nginx restart >> "${TEMPfile}" 2>&1
 
@@ -20,8 +20,6 @@ TEMPfile="/tmp/cert_cron.txt"
 #SUBJ="[Centrex5][AUTOMATICO]Obtencion de Certificados"
 #MESSAGE="$(cat ${TEMPfile})"
 #CHARSET="utf-8"
-
-echo $(cat ${TEMPfile})
 
 /bin/echo certs: $(ls -l /etc/letsencrypt/)
 
