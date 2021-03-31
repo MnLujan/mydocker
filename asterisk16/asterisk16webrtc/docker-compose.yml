@@ -3,7 +3,7 @@ services:
 
   asterisk:
     container_name: asterisk16
-    image: mnlujan/asterisk16webrtc:2.0
+    image: mnlujan/asterisk16webrtc:latest
     volumes: 
       - /etc/localtime:/etc/localtime:ro
       - ./user-data/etc/asterisk:/etc/asterisk
@@ -16,17 +16,18 @@ services:
     restart: always
     network_mode: host
     ports:
-      - 8089:8089
-      - 8088:8088
       - 5060:5060
       - 5061:5061
+      - 8088:8088
+      - 8089:8089
 
   certbot:
     container_name: certbot
-    image: cnsoluciones/certbot
+    image: mnlujan/certbot:latest
     restart: always
     volumes: 
       - ./user-data/etc/letsencrypt:/etc/letsencrypt
+      - ./user-data/var/lib/letsencrypt:/var/lib/letsencrypt
     environment:
       - "domains=${DOMAINS}"
       - "email=${EMAIL}"
@@ -35,15 +36,18 @@ services:
 
   portainer:
     container_name: portainer
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce
     restart: always
+    depends_on:
+      - certbot
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock 
       - /portainer_data:/data
       - ./user-data/etc/letsencrypt:/etc/letsencrypt
-    ports:
-      - 443:9000
+      - ./user-data/var/lib/letsencrypt:/var/lib/letsencrypt
     network_mode: host
+    ports:
+      - 9000:9000
     command:
       --ssl
       --sslcert /etc/letsencrypt/live/certificate/fullchain.pem

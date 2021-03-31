@@ -125,7 +125,7 @@ LABEL maintainer="Martin Lujan <mlujan@voipgroup.com>"
 ENV  DEBIAN_FRONTEND=noninteractive
 
 #Actualizo Repos y OS
-RUN apt update && apt upgrade
+RUN apt update
 
 RUN apt install -y --no-install-recommends --no-install-suggests \
         freetds-dev \
@@ -181,7 +181,6 @@ COPY --from=compiler --chown=asterisk:asterisk /usr/lib/asterisk/ /usr/lib/aster
 COPY --from=compiler --chown=asterisk:asterisk /var/spool/asterisk/ /var/spool/asterisk/
 COPY --from=compiler --chown=asterisk:asterisk /var/log/asterisk/ /var/log/asterisk/
 COPY --from=compiler --chown=asterisk:asterisk /usr/sbin/asterisk /usr/sbin/asterisk
-COPY --from=compiler --chown=asterisk:asterisk /etc/asterisk/ /etc/asterisk/
 COPY --from=compiler --chown=asterisk:asterisk /etc/init.d/asterisk /etc/init.d/
 COPY --from=compiler --chown=asterisk:asterisk /var/lib/asterisk/ /var/lib/asterisk/
 COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/ast
@@ -190,7 +189,11 @@ COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/ast
 RUN cd /var/lib/asterisk/ \
         && rm -Rf static-http/* 
 
-COPY .././web/ /var/lib/asterisk/static-http/
+ADD .././web/ /var/lib/asterisk/static-http/
+
+RUN chown asterisk:asterisk /var/lib/asterisk/static-http/*
+
+RUN ls -la /var/lib/asterisk/static-http/
 
 # Cambio permisos
 RUN chmod 744 /var/lib/asterisk/static-http/*

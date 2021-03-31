@@ -171,14 +171,13 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
 
 #Copio los archivos de config y binarios compilados anteriormente
 
-COPY ./etc/* /etc
+COPY ./etc/ /etc
 
 COPY --from=compiler --chown=asterisk:asterisk /usr/lib/libasterisk* /usr/lib/
 COPY --from=compiler --chown=asterisk:asterisk /usr/lib/asterisk/ /usr/lib/asterisk/
 COPY --from=compiler --chown=asterisk:asterisk /var/spool/asterisk/ /var/spool/asterisk/
 COPY --from=compiler --chown=asterisk:asterisk /var/log/asterisk/ /var/log/asterisk/
 COPY --from=compiler --chown=asterisk:asterisk /usr/sbin/asterisk /usr/sbin/asterisk
-COPY --from=compiler --chown=asterisk:asterisk /etc/asterisk/ /etc/asterisk/
 COPY --from=compiler --chown=asterisk:asterisk /etc/init.d/asterisk /etc/init.d/
 COPY --from=compiler --chown=asterisk:asterisk /var/lib/asterisk/ /var/lib/asterisk/
 COPY --from=compiler /usr/local/sbin/a /usr/local/sbin/a
