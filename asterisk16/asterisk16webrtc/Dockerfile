@@ -190,7 +190,7 @@ COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/ast
 RUN cd /var/lib/asterisk/ \
         && rm -Rf static-http/* 
 
-COPY ./web/ /var/lib/asterisk/static-http/
+COPY .././web/ /var/lib/asterisk/static-http/
 
 # Cambio permisos
 RUN chmod 744 /var/lib/asterisk/static-http/*
