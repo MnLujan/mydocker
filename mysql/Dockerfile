@@ -1,8 +1,8 @@
 FROM ubuntu:focal
+
 RUN apt update
 RUN apt -y upgrade
-RUN apt -y install vim
-RUN apt -y install net-tools
+RUN apt -y install vim net-tools 
 
 # mysql intallation
 RUN apt install -y mysql-server
@@ -15,6 +15,9 @@ COPY files/backup.sql /home/voipgroup/
 
 # script for entrypoint
 COPY scripts/ opt/scripts/
+
 RUN chmod +x /opt/scripts/entrypoint.sh
+
 WORKDIR /opt/scripts
-ENTRYPOINT ./entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
