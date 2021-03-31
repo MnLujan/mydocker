@@ -189,7 +189,7 @@ COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/ast
 RUN cd /var/lib/asterisk/ \
         && rm -Rf static-http/* 
 
-ADD .././web/ /var/lib/asterisk/static-http/
+ADD ./web/ /var/lib/asterisk/static-http/
 
 RUN chown asterisk:asterisk /var/lib/asterisk/static-http/*
 
