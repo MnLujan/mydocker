@@ -61,7 +61,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
 
 #Compilo Asterisk en Realtime
 RUN cd /usr/src/ \
-        && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}}-current.tar.gz \
+        && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}-current.tar.gz \
         && tar xfz asterisk-* \
         && rm -f asterisk-*.tar.gz \
 	&& mv asterisk-* asterisk \
@@ -105,10 +105,10 @@ RUN cd /usr/src \
 
 #Opus codecs
 RUN cd /usr/src \
-        && wget -O codec_opus.tar.gz http://downloads.digium.com/pub/telephony/codec_opus/asterisk-${Asterisk}}.0/x86-64/codec_opus-${Asterisk}}.0_current-x86_64.tar.gz \
+        && wget -O codec_opus.tar.gz http://downloads.digium.com/pub/telephony/codec_opus/asterisk-${Asterisk}.0/x86-64/codec_opus-${Asterisk}}.0_current-x86_64.tar.gz \
         && tar -xvzf codec_opus.tar.gz \
         && rm -f codec_opus.tar.gz \
-        && cd codec_opus-${Asterisk}}* \
+        && cd codec_opus-${Asterisk}* \
         && cp codec_opus.so /usr/lib/asterisk/modules \
         && cp format_ogg_opus.so /usr/lib/asterisk/modules \
         && cp codec_opus_config-en_US.xml /var/lib/asterisk/documentation/thirdparty \
@@ -169,8 +169,11 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         uuid-dev \
         && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 
-#Copio los archivos de config y binarios compilados anteriormente
+### Usuario asterisk
+RUN addgroup --gid 500 asterisk \
+        && adduser --uid 500 --gid 500 --gecos "Asterisk User" --disabled-password asterisk 
 
+#Copio los archivos de config y binarios compilados anteriormente
 COPY ./etc/ /etc
 
 COPY --from=compiler --chown=asterisk:asterisk /usr/lib/libasterisk* /usr/lib/
@@ -180,7 +183,10 @@ COPY --from=compiler --chown=asterisk:asterisk /var/log/asterisk/ /var/log/aster
 COPY --from=compiler --chown=asterisk:asterisk /usr/sbin/asterisk /usr/sbin/asterisk
 COPY --from=compiler --chown=asterisk:asterisk /etc/init.d/asterisk /etc/init.d/
 COPY --from=compiler --chown=asterisk:asterisk /var/lib/asterisk/ /var/lib/asterisk/
-COPY --from=compiler /usr/local/sbin/a /usr/local/sbin/a
+COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/ast
+
+#Copio los scripts de ejecucion
+COPY .AGI/ /var/lib/asterisk/agi-bin/
 
 #### Pagina web
 RUN cd /var/lib/asterisk/ \
@@ -188,6 +194,12 @@ RUN cd /var/lib/asterisk/ \
 
 COPY ./web/ /var/lib/asterisk/static-http/
 
+RUN chown asterisk:asterisk /var/lib/asterisk/static-http/*
+
+RUN ls -la /var/lib/asterisk/static-http/
+
+# Cambio permisos
+RUN chmod 744 /var/lib/asterisk/static-http/*
 
 EXPOSE 5060 5061 5160 5161 8088 8089 10000-20000/udp 10000-20000/tcp
 
@@ -215,3 +227,5 @@ RUN cp -fra /etc/asterisk /etc/asterisk.org \
 WORKDIR /etc/asterisk
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
+
+CMD ["/usr/sbin/asterisk", "-f", "-U", "asterisk", "-G", "asterisk"]

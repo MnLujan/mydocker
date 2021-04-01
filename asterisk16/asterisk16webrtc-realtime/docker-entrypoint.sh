@@ -4,14 +4,21 @@ echo "CHCK VOLUME MOUNT\n"
 
 if [ -z "$(ls -A /etc/asterisk)" ]; then
   cp -fra /etc/asterisk.org/* /etc/asterisk
+  chown asterisk:asterisk -R /etc/asterisk
 fi
 
 if [ -z "$(ls -A /var/lib/asterisk/sounds)" ]; then
   cp -fra /var/lib/asterisk/sounds.org/* /var/lib/asterisk/sounds
+  chown asterisk:asterisk -R /var/lib/asterisk/sounds
 fi
 
 if [ -z "$(ls -A /var/spool/asterisk/voicemail)" ]; then
   cp -fra /var/spool/asterisk/voicemail.org /var/spool/asterisk/voicemail
+  chown asterisk:asterisk -R /var/spool/asterisk/voicemail
+fi
+
+if [ -d "/etc/letsencrypt" ]; then
+  chown asterisk:asterisk -R /etc/letsencrypt
 fi
 
 
@@ -55,6 +62,7 @@ max_connections=>5
 pre-connect=>yes
 username=>$MYSQL_USER
 password=>$MYSQL_PASSWORD
+pre-connect=> yes
 
 [mysql2]
 enabled => no
@@ -63,13 +71,6 @@ username => myuser
 password => mypass
 pre-connect => yes
 
-[asteriskdb]
-enabled=>yes
-dsn=>asteriskcdr
-max_connections=>5
-pre-connect=>yes
-username=>asterisk
-password=>*Q1w2e3r4
 ENDLINE
 fi
 
@@ -78,61 +79,51 @@ cat > /etc/asterisk/manager.conf <<ENDLINE
 [general]
 enabled = yes
 port = 5038
-bindaddr = 127.0.0.1
+bindaddr = 0.0.0.0
 displayconnects=no ;only effects 1.6+
-
-[${ASTERISK_MANAGER_USER}]
-secret = ${ASTERISK_MANAGER_SECRET}
-deny = 0.0.0.0/0.0.0.0
-permit = 127.0.0.1/255.255.255.0
-read = all
-write = all
-writetimeout = 1000
-eventfilter=!Event: RTCP*
-eventfilter=!Event: VarSet
-eventfilter=!Event: Cdr
-eventfilter=!Event: DTMF
-eventfilter=!Event: AGIExec
-eventfilter=!Event: ExtensionStatus
-eventfilter=!Event: ChannelUpdate
-eventfilter=!Event: ChallengeSent
-eventfilter=!Event: SuccessfulAuth
-eventfilter=!Event: DeviceStateChange
-eventfilter=!Event: RequestBadFormat
-eventfilter=!Event: MusicOnHoldStart
-eventfilter=!Event: MusicOnHoldStop
-eventfilter=!Event: NewAccountCode
-eventfilter=!Event: DeviceStateChange
 ENDLINE
 fi
 
+if [ ! -f "/etc/asterisk/sorcery.conf" ]; then
+cat > /etc/asterisk/sorcery.conf <<ENDLINE
+[res_pjsip]
+endpoint=realtime,ps_endpoints
+auth=realtime,ps_auths
+aor=realtime,ps_aors
+domain_alias=realtime,ps_domain_aliases
+contact=realtime,ps_contacts
 
-#custom pjsip_template.conf
-PJSIP_USER_AGENT=`cat /etc/asterisk/pjsip_template.conf | grep _USER_AGENT_ |cut -d '=' -f2 | head -1`
-PJSIP_EXTERNAL_MEDIA_ADDRESS=`cat /etc/asterisk/pjsip_template.conf | grep _PJSIP_EXTERNAL_MEDIA_ADDRESS_ |cut -d '=' -f2 | head -1`
-PJSIP_EXTERNAL_SIGNALING_ADDRESS=`cat /etc/asterisk/pjsip_template.conf | grep _PJSIP_EXTERNAL_SIGNALING_ADDRESS_ |cut -d '=' -f2 | head -1`
-PJSIP_LOCAL_NET=`cat /etc/asterisk/pjsip_template.conf | grep _PJSIP_LOCAL_NET_ |cut -d '=' -f2 | head -1`
+[res_pjsip_endpoint_identifier_ip]
+identify=realtime,ps_endpoint_id_ips
 
-if [ "$PJSIP_USER_AGENT" = '_USER_AGENT_' ] && [ "$ASTERISK_USER_AGENT" != '' ] && [ "$PJSIP_EXTERNAL_MEDIA_ADDRESS" = '_PJSIP_EXTERNAL_MEDIA_ADDRESS_' ] && [ "$ASTERISK_PJSIP_EXTERNAL_MEDIA_ADDRESS" != '' ] && [ "$PJSIP_EXTERNAL_SIGNALING_ADDRESS" = '_PJSIP_EXTERNAL_SIGNALING_ADDRESS_' ] && [ "$ASTERISK_PJSIP_EXTERNAL_SIGNALING_ADDRESS" != '' ] && [ "$PJSIP_LOCAL_NET" = '_PJSIP_LOCAL_NET_' ] && [ "$ASTERISK_PJSIP_LOCAL_NET" != '' ];then
-  sed -i "s/_USER_AGENT_/${ASTERISK_USER_AGENT}/g" "/etc/asterisk/pjsip_template.conf"
-  sed -i "s/_PJSIP_EXTERNAL_MEDIA_ADDRESS_/${ASTERISK_PJSIP_EXTERNAL_MEDIA_ADDRESS}/g" "/etc/asterisk/pjsip_template.conf"
-  sed -i "s/_PJSIP_EXTERNAL_SIGNALING_ADDRESS_/${ASTERISK_PJSIP_EXTERNAL_SIGNALING_ADDRESS}/g" "/etc/asterisk/pjsip_template.conf"
-  ASTERISK_PJSIP_LOCAL_NET01=`echo ${ASTERISK_PJSIP_LOCAL_NET} | tr "/" "\n" | head -1`
-  ASTERISK_PJSIP_LOCAL_NET02=`echo ${ASTERISK_PJSIP_LOCAL_NET} | tr "/" "\n" | tail  -1`
-  sed -i "s/_PJSIP_LOCAL_NET_/${ASTERISK_PJSIP_LOCAL_NET01}\/${ASTERISK_PJSIP_LOCAL_NET02}/g" "/etc/asterisk/pjsip_template.conf"
+[res_pjsip_outbound_registration]
+registration=realtime,ps_registrations
+ENDLINE
 fi
 
-#custom sip.conf
-SIP_USER_AGENT=`cat /etc/asterisk/sip.conf | grep _USER_AGENT_ |cut -d '=' -f2 | head -1`
-SIP_EXTERN_ADDR=`cat /etc/asterisk/sip.conf | grep _SIP_EXTERN_ADDR_ |cut -d '=' -f2 | head -1`
-SIP_LOCAL_NET=`cat /etc/asterisk/sip.conf | grep _SIP_LOCAL_NET_ |cut -d '=' -f2 | head -1`
-
-if [ "$SIP_USER_AGENT" = '_USER_AGENT_' ] && [ "$ASTERISK_USER_AGENT" != '' ] && [ "$SIP_EXTERN_ADDR" = '_SIP_EXTERN_ADDR_' ] && [ "$ASTERISK_SIP_EXTERN_ADDR" != '' ] && [ "$SIP_LOCAL_NET" = '_SIP_LOCAL_NET_' ] && [ "$ASTERISK_SIP_LOCAL_NET" != '' ];then
-  sed -i "s/_USER_AGENT_/${ASTERISK_USER_AGENT}/g" "/etc/asterisk/sip.conf"
-  sed -i "s/_SIP_EXTERN_ADDR_/${ASTERISK_SIP_EXTERN_ADDR}/g" "/etc/asterisk/sip.conf"
-  ASTERISK_SIP_LOCAL_NET01=`echo ${ASTERISK_SIP_LOCAL_NET} | tr "/" "\n" | head -1`
-  ASTERISK_SIP_LOCAL_NET02=`echo ${ASTERISK_SIP_LOCAL_NET} | tr "/" "\n" | tail  -1`
-  sed -i "s/_SIP_LOCAL_NET_/${ASTERISK_SIP_LOCAL_NET01}\/${ASTERISK_SIP_LOCAL_NET02}/g"  "/etc/asterisk/sip.conf"
+if [ ! -f "/etc/asterisk/modules.conf" ]; then
+cat > /etc/asterisk/modules.conf <<ENDLINE
+[modules]
+autoload=yes
+noload => chan_alsa.so
+noload => chan_console.so
+load=>res_musiconhold.so
+load => app_realtime.so
+load => func_realtime.so
+load => pbx_realtime.so
+noload => res_hep.so
+noload => res_hep_pjsip.so
+noload => res_hep_rtcp.so
+preload => res_odbc.so
+preload => res_config_odbc.so
+noload => chan_sip.so 
+noload => cdr_mysql.so
+noload => cdr_csv.so
+noload => cdr_custom.so
+noload => res_pjsip_config_wizard.so
+ENDLINE
 fi
 
-/usr/sbin/asterisk -f -U root -G root
+exec "@"
+
+asterisk -rx 'odbc show'
