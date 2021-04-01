@@ -3,7 +3,7 @@ FROM debian:buster-slim AS compiler
 
 LABEL maintainer="Martin Lujan <mlujan@voipgroup.com>"
 
-ENV DEBIAN_FRONT=noninteractive\
+ENV DEBIAN_FRONTEND=noninteractive\
         Asterisk=16
 
 #Actualizo los repos y OS
@@ -105,7 +105,7 @@ RUN cd /usr/src \
 
 #Opus codecs
 RUN cd /usr/src \
-        && wget -O codec_opus.tar.gz http://downloads.digium.com/pub/telephony/codec_opus/asterisk-${Asterisk}.0/x86-64/codec_opus-${Asterisk}}.0_current-x86_64.tar.gz \
+        && wget -O codec_opus.tar.gz http://downloads.digium.com/pub/telephony/codec_opus/asterisk-${Asterisk}.0/x86-64/codec_opus-${Asterisk}.0_current-x86_64.tar.gz \
         && tar -xvzf codec_opus.tar.gz \
         && rm -f codec_opus.tar.gz \
         && cd codec_opus-${Asterisk}* \
@@ -186,7 +186,7 @@ COPY --from=compiler --chown=asterisk:asterisk /var/lib/asterisk/ /var/lib/aster
 COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/ast
 
 #Copio los scripts de ejecucion
-COPY .AGI/ /var/lib/asterisk/agi-bin/
+COPY ./AGI/ /var/lib/asterisk/agi-bin/
 
 #### Pagina web
 RUN cd /var/lib/asterisk/ \
