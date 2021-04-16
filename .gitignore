@@ -1,2 +1,6 @@
 #gitignore
 /*/user-data/
+/*/.vscode/
+.vscode/
+asterisk16/*/*.back
+asterisk16/*/*.bkp

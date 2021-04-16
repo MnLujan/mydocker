@@ -59,7 +59,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         wget \
         && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 
-#Compilo Asterisk en Realtime
+#Compilo Asterisk No realtime
 RUN cd /usr/src/ \
         && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}-current.tar.gz \
         && tar xfz asterisk-* \
@@ -158,14 +158,10 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         libxml2-dev \
         libxslt-dev \
         net-tools \
-        odbc-postgresql \
         openssl \
-        postgresql-client \
         procps \
         supervisor \
         tzdata \
-        unixodbc \
-        unixodbc-dev \
         uuid-dev \
         && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 

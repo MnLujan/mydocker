@@ -1,8 +1,8 @@
 FROM ubuntu:focal
 
 RUN apt update
-RUN apt -y upgrade
-RUN apt -y install vim net-tools 
+
+RUN apt -y install vim net-tools htop
 
 # mysql intallation
 RUN apt install -y mysql-server

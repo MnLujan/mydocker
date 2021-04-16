@@ -1,41 +1,19 @@
-version '3.3'
+version: '3.3'
 services:
 
-  mysql-db:
+  mysqldb:
     container_name: mysqldb
     image: mnlujan/mysql:latest
     volumes: 
-      - ./user-data/database:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
     environment:
-        - "MYSQL_USER=${MYSQL_USER}"
-        - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+      - "MYSQL_USER=${MYSQL_USER}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+      - "MYSQL_DATABASES=${MYSQL_DATABASE_DB}"
     restart: always
     network_mode: host
-
-  asterisk:
-    container_name: asterisk16-realtime
-    image: mnlujan/asterisk16webrtc-realtime:latest
-    volumes: 
-      - /etc/localtime:/etc/localtime:ro
-      - ./user-data/etc/asterisk:/etc/asterisk
-      - ./user-data/var/lib/asterisk/sounds:/var/lib/asterisk/sounds
-      - ./user-data/backup:/backup
-      - ./user-data/etc/letsencrypt:/etc/letsencrypt
-      - ./user-data/rec:/var/spool/asterisk/monitor
-    depends_on:
-      - certbot
-      - mysql
-    restart: always
-    network_mode: host
-    ports:
-      - 5060:5060
-      - 5061:5061
-      - 8088:8088
-      - 8089:8089
-    links: 
-      - mysql-db
-  
 
   certbot:
     container_name: certbot
@@ -50,21 +28,30 @@ services:
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     network_mode: host
 
-  portainer:
-    container_name: portainer
-    image: portainer/portainer-ce
-    restart: always
+  asterisk:
+    environment:
+      - "MYSQL_USER=${MYSQL_USER}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+      - "MYSQL_HOST=${MYSQL_HOST}"
+      - "MYSQL_PORT=${MYSQL_PORT}"
+    container_name: asterisk16-realtime
+    image: mnlujan/asterisk16webrtc-realtime:latest
+    volumes: 
+      - /etc/localtime:/etc/localtime:ro
+      - ./user-data/etc/asterisk:/etc/asterisk
+      - ./user-data/var/lib/asterisk/sounds:/var/lib/asterisk/sounds
+      - ./user-data/backup:/backup
+      - ./user-data/etc/letsencrypt:/etc/letsencrypt
+      - ./user-data/rec:/var/spool/asterisk/monitor
     depends_on:
       - certbot
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock 
-      - /portainer_data:/data
-      - ./user-data/etc/letsencrypt:/etc/letsencrypt
-      - ./user-data/var/lib/letsencrypt:/var/lib/letsencrypt
+      - mysqldb
+    restart: always
     network_mode: host
     ports:
-      - 9000:9000
-    command:
-      --ssl
-      --sslcert /etc/letsencrypt/live/certificate/fullchain.pem
-      --sslkey /etc/letsencrypt/live/certificate/privkey.pem
+      - 5060:5060
+      - 5061:5061
+      - 8088:8088
+      - 8089:8089
+volumes:
+  mysql_data:

@@ -125,9 +125,11 @@ LABEL maintainer="Martin Lujan <mlujan@voipgroup.com>"
 ENV  DEBIAN_FRONTEND=noninteractive
 
 #Actualizo Repos y OS
-RUN apt update && apt upgrade
+RUN apt update 
 
 RUN apt install -y --no-install-recommends --no-install-suggests \
+        default-libmysqlclient-dev \
+        dpkg-dev \
         freetds-dev \
         libbinutils \
         libcap2 \
@@ -140,8 +142,10 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         libiksemel-dev \
         libjansson-dev \
         libldap2-dev \
+        libgtk2.0-0 \
         libncurses5-dev \
         libneon27-dev \
+        libodbc1 \
         libosptk4 \
         libportaudio-ocaml-dev \
         libresample1-dev \
@@ -158,16 +162,31 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         libxml2-dev \
         libxslt-dev \
         net-tools \
-        odbc-postgresql \
         openssl \
-        postgresql-client \
         procps \
         supervisor \
         tzdata \
         unixodbc \
         unixodbc-dev \
         uuid-dev \
-        && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
+        wget \
+        && rm -rf /var/lib/{apt,dpkg,cache,log}/ \
+        && rm /etc/odbc.ini 
+
+### Conector ODBC
+RUN cd / && wget --no-check-certificate https://downloads.mysql.com/archives/get/p/10/file/mysql-connector-odbc-setup_8.0.22-1debian10_amd64.deb \
+        https://downloads.mysql.com/archives/get/p/10/file/mysql-connector-odbc-setup-dbgsym_8.0.22-1debian10_amd64.deb \
+        https://downloads.mysql.com/archives/get/p/10/file/mysql-connector-odbc_8.0.22-1debian10_amd64.deb \
+        https://downloads.mysql.com/archives/get/p/10/file/mysql-connector-odbc-dbgsym_8.0.22-1debian10_amd64.deb \
+        https://repo.mysql.com/apt/debian/pool/mysql-8.0/m/mysql-community/mysql-community-client-plugins_8.0.23-1debian10_amd64.deb
+
+RUN apt --fix-broken install
+
+RUN dpkg -i mysql-community-client-plugins_8.0.23-1debian10_amd64.deb \
+        && dpkg -i mysql-connector-odbc_8.0.22-1debian10_amd64.deb \
+        && dpkg -i mysql-connector-odbc-dbgsym_8.0.22-1debian10_amd64.deb \
+        && dpkg -i mysql-connector-odbc-setup_8.0.22-1debian10_amd64.deb\
+        && dpkg -i mysql-connector-odbc-setup-dbgsym_8.0.22-1debian10_amd64.deb
 
 ### Usuario asterisk
 RUN addgroup --gid 500 asterisk \

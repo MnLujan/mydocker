@@ -1,28 +1,30 @@
-#!/usr/bin/bash
-#TEMPfile="/tmp/cert_cron.txt"
-/bin/echo "[Centrex5] Renovacion de certificados: "
+#!/usr/bin/env bash
 
-/usr/bin/certbot --version
+certbot --version
 
-/usr/bin/certbot certonly --dry-run --noninteractive --verbose --quiet --standalone -d floyd.voipgroup.com
+if [ -z ${renew+x} ]; then
 
-/bin/echo "[Centrex5]"
+  if [ -z ${email+x} ]; then echo "Fatal: no set 'email' in enviroment"; exit 1; fi
+  if [ -z ${domains+x} ]; then echo "Fatal: domains must be specified with the environment variable named 'domains'"; exit 1; fi
 
-#/usr/sbin/service nginx restart >> "${TEMPfile}" 2>&1
+  if [ -z ${distinct+x} ]; then
 
-#####################################
-#	Mail config
-#####################################
-#SERVER="mail.voipgroup.com"
-#FROM="dev@voipgroup.com"
-#TO="${email}"
+    echo "CERTBOT - Obtaining certificates"
+    certbot certonly --verbose --noninteractive --agree-tos --standalone --email="${email}" -d "${domains}"
+    
+    #Enlace simbolico a los certs
+    cd /etc/letsencrypt/live && ln -s $(ls | grep -v "README")/ certificate "$@"; else
 
-#SUBJ="[Centrex5][AUTOMATICO]Obtencion de Certificados"
-#MESSAGE="$(cat ${TEMPfile})"
-#CHARSET="utf-8"
+    IFS=',' read -ra ADDR <<< "$domains"
+    for domain in "${ADDR[@]}"; do
+        echo "for " $@;
+        certbot certonly --verbose --noninteractive --quiet --standalone --agree-tos --email="${email}" -d "${domain}" "$@";
+    done
 
-/bin/echo certs: $(ls -l /etc/letsencrypt/)
+  fi; else
 
-#Revisar, pero en arch no existe sendmail
-#/usr/sbin/sendmail -f $FROM -t $TO -u $SUBJ -s $SERVER -m "${MESSAGE}" -v -o message-charset=$CHARSET
+  echo "CERTBOT - Renew certs"
+  certbot renew "$@"
+
+fi
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "CHCK VOLUME MOUNT\n"
+echo "CHECK VOLUME MOUNT\n"
 
 if [ -z "$(ls -A /etc/asterisk)" ]; then
   cp -fra /etc/asterisk.org/* /etc/asterisk
@@ -30,26 +30,25 @@ Driver = MySQL
 Server = $MYSQL_HOST
 Port = $MYSQL_PORT
 Database = newcentrex
-UserName = asterisk
-Password = *Q1w2e3r4
-Socket = /var/run/mysqld/mysqld.sock
+UserName = $MYSQL_USER
+Password = $MYSQL_PASSWORD
 Option=3
 Charset=utf8
 
 ENDLINE
 fi
 
+rm /etc/odbcinst.ini
+
 if [ ! -f "/etc/odbcinst.ini" ]; then
 cat > /etc/odbcinst.ini <<ENDLINE
 # Driver from the mysql-connector-odbc package
 # Setup from the unixODBC package
 [MySQL]
-Description	= ODBC for MySQL
-Driver		= /usr/lib/libmyodbc5.so
-Setup		= /usr/lib/libodbcmyS.so
-Driver64	= /usr/lib64/libmyodbc5.so
-Setup64		= /usr/lib64/libodbcmyS.so
-FileUsage	= 1
+Description = ODBC for MySQL
+Driver=/usr/lib/x86_64-linux-gnu/odbc/libmyodbc8a.so
+Setup=/usr/lib/x86_64-linux-gnu/odbc/libmyodbc8S.so
+FileUsage=1
 ENDLINE
 fi
 
@@ -58,8 +57,6 @@ cat > /etc/asterisk/res_odbc.conf <<ENDLINE
 [asterisk]
 enabled=>yes
 dsn=>asterisk-centr3x
-max_connections=>5
-pre-connect=>yes
 username=>$MYSQL_USER
 password=>$MYSQL_PASSWORD
 pre-connect=> yes
@@ -124,6 +121,7 @@ noload => res_pjsip_config_wizard.so
 ENDLINE
 fi
 
-exec "@"
+sleep 15
 
-asterisk -rx 'odbc show'
+exec "$@"
+
