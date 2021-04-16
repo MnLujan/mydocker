@@ -6,12 +6,11 @@ function containers(){
     echo "Se selecciono borrado de contenedores"
     read -p "Ingresar [Y/n] para confirmar la operacion " -n 2 -r
     echo
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        echo "----Cancelando operacion-----"
-        exit;
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        docker rm $(docker ps -a | awk 'NR>1 { print $1. " " }' | tr -d '\n')
+    	exit;
     fi
-
-    docker rm $(docker ps -a | awk 'NR>1 { print $1. " " }' | tr -d '\n')
+    echo "----Cancelando operacion-----"
     exit;
 
 }
@@ -22,19 +21,31 @@ function images(){
     echo ""
     read -p "Ingresar [Y/n] para confirmar la operacion " -n 2 -r
     echo
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        echo "----Cancelando operacion-----"
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        
+        docker rmi $(docker images | grep none | awk '{ print $3 }' | awk ' NR=1 { print $1, $2 }' | tr -d '\n')
         exit;
     fi
-
-    docker rmi $(docker images | grep none | awk '{ print $3 }' | awk ' NR=1 { print $1, $2 }' | tr -d '\n')
+    
+    echo "----Cancelando operacion-----"
+    exit;
 
 }
 
 function volumes(){
 
-    echo "implementar jeje"
+    echo ""
+    echo "Borrado de volumenes no usados"
+    echo ""
+     read -p "Ingresar [Y/n] para confirmar la operacion " -n 2 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    	docker volumes prune
+    	exit;   
+    fi
+    echo "----Cancelando operacion-----"
     exit;
+    
 }
 
 #----------------------------------------------------------------------------------#

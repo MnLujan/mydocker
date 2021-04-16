@@ -207,7 +207,7 @@ COPY --from=compiler --chown=asterisk:asterisk /var/log/asterisk/ /var/log/aster
 COPY --from=compiler --chown=asterisk:asterisk /usr/sbin/asterisk /usr/sbin/asterisk
 COPY --from=compiler --chown=asterisk:asterisk /etc/init.d/asterisk /etc/init.d/
 COPY --from=compiler --chown=asterisk:asterisk /var/lib/asterisk/ /var/lib/asterisk/
-COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/ast
+COPY --from=compiler /usr/local/sbin/ast /usr/local/sbin/a
 
 #Copio los scripts de ejecucion
 COPY ./AGI/ /var/lib/asterisk/agi-bin/
