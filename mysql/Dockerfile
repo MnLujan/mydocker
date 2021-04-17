@@ -18,6 +18,8 @@ COPY scripts/ opt/scripts/
 
 RUN chmod +x /opt/scripts/entrypoint.sh
 
+EXPOSE  3306 33006
+
 WORKDIR /opt/scripts
 
 ENTRYPOINT ["./entrypoint.sh"]
