@@ -1,6 +1,7 @@
 #gitignore
+/asterisk16/*/user-data/
 /*/user-data/
-/*/.vscode/
+./*/.vscode/
 .vscode/
 asterisk16/*/*.back
 asterisk16/*/*.bkp
