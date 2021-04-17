@@ -1,0 +1,52 @@
+version: '3.3'
+services: 
+  mysqldb:
+    container_name: mysqldb
+    image: mnlujan/mysql:latest
+    volumes: 
+      - mysql_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - "MYSQL_USER=${MYSQL_USER}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+      - "MYSQL_DATABASES=${MYSQL_DATABASE_DB}"
+    restart: always
+    network_mode: host
+
+  asterisk:
+    container_name: asterisk16
+    image: mnlujan/asterisk16-nowebrtc:latest
+    volumes: 
+      - /etc/localtime:/etc/localtime:ro
+      - ./user-data/etc/asterisk:/etc/asterisk
+      - ./user-data/var/lib/asterisk/sounds:/var/lib/asterisk/sounds
+      - ./user-data/backup:/backup
+      - ./user-data/etc/letsencrypt:/etc/letsencrypt
+      - ./user-data/rec:/var/spool/asterisk/monitor
+    environment: 
+      - "MYSQL_USER=${MYSQL_USER}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+      - "MYSQL_DATABASES=${MYSQL_DATABASE_DB}"
+    restart: always
+    network_mode: host
+    depends_on: 
+      - mysqldb
+    ports:
+      - 5060:5060
+      - 5061:5061
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock 
+      - /portainer_data:/data
+    network_mode: host
+    ports:
+      - 8000:8000
+      - 9000:9000
+volumes: 
+  mysql_data:
