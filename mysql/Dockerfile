@@ -2,16 +2,13 @@ FROM ubuntu:focal
 
 RUN apt update
 
-RUN apt -y install vim net-tools htop
-
-# mysql intallation
-RUN apt install -y mysql-server
+RUN apt -y install vim net-tools mysql-server
 
 # mysqld.cnf bind-address = 0.0.0.0
 COPY files/mysqld.cnf /etc/mysql/mysql.conf.d/
 
 # backup to restore
-COPY files/backup.sql /home/voipgroup/
+COPY files/backup.sql /home/database/
 
 # script for entrypoint
 COPY scripts/ opt/scripts/

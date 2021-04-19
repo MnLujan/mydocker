@@ -13,6 +13,7 @@ services:
       - "MYSQL_DATABASES=${MYSQL_DATABASE_DB}"
     restart: always
     network_mode: host
+    tty: true
 
   asterisk:
     container_name: asterisk16
