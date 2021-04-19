@@ -3,13 +3,9 @@ echo "[`date`][Entrypoint] Starting MySQL DataBase"
 
 echo "[`date`][Entrypoint] Config MySQL DataBase"
 
-service mysql stop
-
-usermod -d /var/lib/mysql/ mysql
+cd /home/database
 
 service mysql start
-
-cd /home/database
 
 echo "[`date`][Entrypoint] Restore Backup"
 mysql --user="root" --execute="CREATE DATABASE newcentrex"

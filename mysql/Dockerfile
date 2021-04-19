@@ -1,8 +1,4 @@
-FROM ubuntu:focal
-
-RUN apt update
-
-RUN apt -y install vim net-tools mysql-server
+FROM mysql:8.0
 
 # mysqld.cnf bind-address = 0.0.0.0
 COPY files/mysqld.cnf /etc/mysql/mysql.conf.d/
@@ -15,8 +11,8 @@ COPY scripts/ opt/scripts/
 
 RUN chmod +x /opt/scripts/entrypoint.sh
 
-EXPOSE  3306 33006
-
 WORKDIR /opt/scripts
+
+EXPOSE  3306 33006
 
 ENTRYPOINT ["./entrypoint.sh"]
