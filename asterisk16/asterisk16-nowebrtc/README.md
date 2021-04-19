@@ -1,8 +1,11 @@
-# Asterisk webRTC
+# Asterisk PBX Realtime
 
-La siguiente carpeta contiene los archivos y las configuraciones necesarias para deployar un pequeño servidor web commandado por **Asterisk** en su version **16**. Este *servidor* nos permite hacer llamadas, videollamadas, conferencias, compartir pantalla, enviar mensajes, etc. En una interfaz muy amigable.
-
-(agregar imagen)
+Imagen utilizada por el equipo de desarrolladores para el deploy de **Asterisk 16 en realtime**, con su Base de datos en **MySQL** en su version 8 y un administrador de containers llamado **Portainer** que se encontrara corriendo en `ip-server:9000`. 
 
 ### Servicios
 
+- asterisk16
+- mysqldb
+- portainer
+---
+[Martin Lujan](https://www.linkedin.com/in/martinlujan-/)
