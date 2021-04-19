@@ -40,7 +40,7 @@ function volumes(){
      read -p "Ingresar [Y/n] para confirmar la operacion " -n 2 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-    	docker volumes prune
+    	docker volume prune
     	exit;   
     fi
     echo "----Cancelando operacion-----"
