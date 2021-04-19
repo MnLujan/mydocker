@@ -61,7 +61,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         wget \
         && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 
-#Compilo Asterisk No realtime
+#Compilo Asterisk realtime
 RUN cd /usr/src/ \
         && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}-current.tar.gz \
         && tar xfz asterisk-* \
@@ -191,7 +191,8 @@ RUN dpkg -i mysql-community-client-plugins_8.0.23-1debian10_amd64.deb \
         && dpkg -i mysql-connector-odbc_8.0.22-1debian10_amd64.deb \
         && dpkg -i mysql-connector-odbc-dbgsym_8.0.22-1debian10_amd64.deb \
         && dpkg -i mysql-connector-odbc-setup_8.0.22-1debian10_amd64.deb\
-        && dpkg -i mysql-connector-odbc-setup-dbgsym_8.0.22-1debian10_amd64.deb
+        && dpkg -i mysql-connector-odbc-setup-dbgsym_8.0.22-1debian10_amd64.deb \
+        && rm /etc/odbcinst.ini
 
 ### Usuario asterisk
 RUN addgroup --gid 500 asterisk \

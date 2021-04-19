@@ -6,11 +6,6 @@ services:
     volumes: 
       - mysql_data:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
-    environment:
-      - "MYSQL_USER=${MYSQL_USER}"
-      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
-      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
-      - "MYSQL_DATABASES=${MYSQL_DATABASE_DB}"
     restart: always
     network_mode: host
     tty: true
@@ -30,6 +25,8 @@ services:
       - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
       - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
       - "MYSQL_DATABASES=${MYSQL_DATABASE_DB}"
+      - "MYSQL_HOST=${MYSQL_HOST}"
+      - "MYSQL_PORT=${MYSQL_PORT}"
     restart: always
     network_mode: host
     depends_on: 
