@@ -31,9 +31,7 @@ services:
     network_mode: host
     depends_on: 
       - mysqldb
-    ports:
-      - 5060:5060
-      - 5061:5061
+    privileged: true  
 
   portainer:
     container_name: portainer
@@ -43,8 +41,5 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock 
       - /portainer_data:/data
     network_mode: host
-    ports:
-      - 8000:8000
-      - 9000:9000
 volumes: 
   mysql_data:

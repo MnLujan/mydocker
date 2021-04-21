@@ -15,12 +15,7 @@ services:
       - certbot
     restart: always
     network_mode: host
-    ports:
-      - 5060:5060
-      - 5061:5061
-      - 8088:8088
-      - 8089:8089
-
+    
   certbot:
     container_name: certbot
     image: mnlujan/certbot:latest
@@ -46,8 +41,6 @@ services:
       - ./user-data/etc/letsencrypt:/etc/letsencrypt
       - ./user-data/var/lib/letsencrypt:/var/lib/letsencrypt
     network_mode: host
-    ports:
-      - 9000:9000
     command:
       --ssl
       --sslcert /etc/letsencrypt/live/certificate/fullchain.pem

@@ -48,10 +48,6 @@ services:
       - mysqldb
     restart: always
     network_mode: host
-    ports:
-      - 5060:5060
-      - 5061:5061
-      - 8088:8088
-      - 8089:8089
+    privileged: true
 volumes:
   mysql_data:
