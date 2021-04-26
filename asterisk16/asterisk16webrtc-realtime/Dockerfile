@@ -163,6 +163,8 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         libxslt-dev \
         net-tools \
         openssl \
+        php \
+        php-mysql \
         procps \
         supervisor \
         tzdata \
