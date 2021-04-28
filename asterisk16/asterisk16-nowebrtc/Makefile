@@ -1,5 +1,5 @@
 DOCKER ?= docker
-TARGET ?= mnlujan/asterisk16-nowebrtc:latest
+TARGET ?= mnlujan/asterisk16-nowebrtc:dev
 
 all:
 	@echo "Building ${TARGET}"
