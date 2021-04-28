@@ -168,6 +168,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         net-tools \
         openssl \
         php \
+        php-mysql \
         procps \
         supervisor \
         tzdata \
@@ -226,6 +227,8 @@ VOLUME [ "/var/lib/asterisk/sounds" ]
 VOLUME [ "/var/spool/asterisk/voicemail" ]
 #asterisk monitor
 VOLUME [ "/var/spool/asterisk/monitor" ]
+#asterisk AGI
+VOLUME ["/var/lib/asterisk/agi-bin/"]
 
 #RUN DOCKER SCRIPT
 COPY docker-entrypoint.sh /
@@ -235,7 +238,8 @@ RUN chmod +x /docker-entrypoint.sh
 #mount
 RUN cp -fra /etc/asterisk /etc/asterisk.org \
         && cp -fra /var/lib/asterisk/sounds /var/lib/asterisk/sounds.org \
-        && cp -fra /var/spool/asterisk/voicemail /var/spool/asterisk/voicemail.org
+        && cp -fra /var/spool/asterisk/voicemail /var/spool/asterisk/voicemail.org \
+        && cp -fra /var/lib/asterisk/agi-bin /var/lib/asterisk/agi-bin.org
 
 WORKDIR /etc/asterisk
 

@@ -1,8 +1,18 @@
 version: '3.3'
-services: 
+services:
+  
+  web:
+    container_name: web
+    image: mercadomati/centrex_web
+    depends_on: 
+      - mysqldb
+    restart: always
+    network_mode: host
+    tty: true
+  
   mysqldb:
     container_name: mysqldb
-    image: mnlujan/mysql:latest
+    image: mercadomati/centrex_db
     volumes: 
       - mysql_data:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
@@ -12,21 +22,11 @@ services:
 
   asterisk:
     container_name: asterisk16
-    image: mnlujan/asterisk16-nowebrtc:latest
+    image: mnlujan/asterisk16-nowebrtc:dev
     volumes: 
       - /etc/localtime:/etc/localtime:ro
       - ./user-data/etc/asterisk:/etc/asterisk
-      - ./user-data/var/lib/asterisk/sounds:/var/lib/asterisk/sounds
-      - ./user-data/backup:/backup
-      - ./user-data/etc/letsencrypt:/etc/letsencrypt
-      - ./user-data/rec:/var/spool/asterisk/monitor
-    environment: 
-      - "MYSQL_USER=${MYSQL_USER}"
-      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
-      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
-      - "MYSQL_DATABASES=${MYSQL_DATABASE_DB}"
-      - "MYSQL_HOST=${MYSQL_HOST}"
-      - "MYSQL_PORT=${MYSQL_PORT}"
+      - ./user-data/var/:/var/lib/asterisk/agi-bin/
     restart: always
     network_mode: host
     depends_on: 

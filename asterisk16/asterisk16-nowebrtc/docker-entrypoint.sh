@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "CHECK VOLUME's MOUNT\n"
+echo "CHECK VOLUME's MOUNT"
 
 if [ -z "$(ls -A /etc/asterisk)" ]; then
   cp -fra /etc/asterisk.org/* /etc/asterisk
@@ -17,8 +17,9 @@ if [ -z "$(ls -A /var/spool/asterisk/voicemail)" ]; then
   chown asterisk:asterisk -R /var/spool/asterisk/voicemail
 fi
 
-if [ -d "/etc/letsencrypt" ]; then
-  chown asterisk:asterisk -R /etc/letsencrypt
+if [ -z "$(ls -A /var/lib/asterisk/agi-bin)" ]; then
+  cp -fra /var/lib/asterisk/agi-bin.org/* /var/lib/asterisk/agi-bin	
+  chown asterisk:asterisk -R /var/lib/asterisk/agi-bin
 fi
 
 if [ ! -f "/etc/asterisk/manager.conf" ]; then
@@ -47,11 +48,11 @@ cat > /etc/odbc.ini <<ENDLINE
 [asterisk-centr3x]
 Description = MySQL ODBC Driver
 Driver = MySQL
-Server = $MYSQL_HOST
-Port = $MYSQL_PORT
+Server = localhost
+Port = 3306
 Database = newcentrex
-UserName = $MYSQL_USER
-Password = $MYSQL_PASSWORD
+UserName = centrex
+Password = centrex123
 Option=3
 Charset=utf8
 ENDLINE
@@ -62,8 +63,8 @@ cat > /etc/asterisk/res_odbc.conf <<ENDLINE
 [asterisk]
 enabled=>yes
 dsn=>asterisk-centr3x
-username=>$MYSQL_USER
-password=>$MYSQL_PASSWORD
+username=>centrex
+password=>centrex123
 pre-connect=> yes
 
 [mysql2]
