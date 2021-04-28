@@ -11,7 +11,7 @@ require_once 'config.php';
 //require_once '../Utils/Utils.php';
 require_once 'webcdr.php';
 require_once 'phpagi.php';
-require_once 'DBmock.php';
+require_once 'Db.php';
 
 /* Dialplans */
 //require_once 'SpeedDials.php';
@@ -40,13 +40,14 @@ $exten_info = explode('_', $exten);
 $cdr->step("Get information for PBX $corpID");
 
 /* Verifico la existencia de la Corpo */
-$Corp = IsCorp($corpID);
 
-if (!$Corp) {
-    //En caso de ser falso no hago nada
+if (!isCorp($corpID)) {
     $cdr->step("** CORP DISABLED OR NOT FOUND **");
     exit;
 }
+
+/* Como existe, pido informacion de la Corpo */
+$Corp = getCorpInfo($corpID);
 
 /* Audios */
 Sounds($cdr, $Corp);

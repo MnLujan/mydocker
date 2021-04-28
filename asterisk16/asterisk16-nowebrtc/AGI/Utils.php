@@ -1,7 +1,7 @@
 <?php
 
 /* Chequeos contra la BD */
-require_once 'DBmock.php';
+require_once 'Db.php';
 require_once 'config.php';
 
 /**
@@ -28,7 +28,7 @@ function WhatIs(array $exten_info, string $destino, array $Corp): string
         return "SpeedDial2";
 
         /* Saliente a una extension */
-    } else if (count($exten_info) == 1 && IsExten($destino, $Corp['extLen'], $Corp['ID'])) {
+    } else if (count($exten_info) == 1 && isExten($destino, $Corp['extLen'], $Corp['ID'])) {
         //@TODO Se busco reproducir el escenario y no hubo resultado, sacar de ser neceasrio.
         return "SalExten";
 
@@ -57,48 +57,6 @@ function Sounds(CDR2 $cdr, array $Corp): void
         $cdr->database_put('call_file_path', $callFilePath);
         $cdr->exec("mixmonitor", $Corp['monPath'] . "/" . $cdr->get_record_file() . ".wav,ab");
     }
-}
-
-/**
- * @brief Consulta en la BD y busca las restricciones del Usuario.
- * @param string $dest
- * @param string $corpID
- * @param array $user
- * @param CDR2 $cdr
- * @return array
- */
-function GetRestriction(string $dest, string $corpID, array $user, CDR2 $cdr): array
-{
-    $tmp = array();
-    $rest = RestrictionExtCorp();
-
-    if (isset($rest['restricted']) && !$rest['restricted']) {
-        $cdr->step("No restrictions applied");
-        return $tmp;
-    }
-
-    switch ($rest['permit']) {
-        case 0:
-            $tmp['pattern'] = $rest['patron'];
-            $tmp['restricted'] = true;
-            break;
-        case 1:
-            $tmp['pattern'] = $rest['patron'];
-            $tmp['restricted'] = false;
-            break;
-        case 2:
-            $pin = getPass($cdr, $rest);
-            if (strcmp($pin, $rest['pin']) == 0) {
-                $tmp['pattern'] = $rest['patron'];
-                $tmp['restricted'] = false;
-            } else {
-                $cdr->exec('Playback', 'incorrect-password');
-                $tmp['pattern'] = $rest['patron'];
-                $tmp['restricted'] = true;
-            }
-            break;
-    }
-    return $tmp;
 }
 
 /**
@@ -147,20 +105,14 @@ function dialExten(string $exten, CDR2 $cdr, string $onbusy): void
 
     $cdr->step("Calling Exten: $exten");
     $tmp = explode('_', $exten);
-    //$query = "SELECT e.*,t.number AS trunk FROM extens e LEFT JOIN trunks t ON t.ID=e.trunkID WHERE e.number='{$tmp[1]}' AND e.enabled='1' AND e.corpID='{$tmp[0]}'";
-    //@TODO Query a realizar
-    $res = GetExten();
-
-    if ($res = null) {
-        $cdr->close('** EXTEN DISABLED OR NOT FOUND **');
-    }
 
     /* Se realiza un cambio de contexto */
     $cdr->set_context($tmp[0]);
-    $data = GetExten(); //se pide la accion para el numero de extension
+    $data = extenAction($tmp); //se pide la accion para el numero de extension
 
     if ($onbusy != '') {
         $action = $onbusy;
+        $cdr->step("Executing On Busy: $action");
     } else {
         $action = $data['action'];
     }
@@ -227,7 +179,7 @@ function Ring(CDR2 $cdr, string $exten, array $datos)
     //@TODO Ver la variable AGI_DIAL_TIMEOUT
     $caller = $cdr->get_pbx();
     $cdr->step("Calling Exten");
-    $cdr->exec('Dial', array("PJSIP/$caller/$exten",AGI_DIAL_TIMEOUT));
+    $cdr->exec('Dial', array("PJSIP/$caller/$exten", AGI_DIAL_TIMEOUT));
     $status = $cdr->get_variable('DIALSTATUS');
     if (!wasAnswered($status) && $datos['onbusy'] != '') {
         dialExten($exten, $cdr, $datos['onbusy']);
@@ -388,6 +340,42 @@ function FollowMe(CDR2 $cdr, array $data, string $exten)
 function wasAnswered(string $status): bool
 {
     return $status != 'CONGESTION' && $status != 'CHANUNAVAIL' && $status != 'BUSY' && $status != 'NOANSWER' && $status != 'UNKNOWN';
+}
+
+
+// Comentar si no anda(no existe el metodo en dbmock)
+/**
+ * @brief Procesa las restricciones y devuelve la restriccion que mas matchea
+ * @param string $dest
+ * @param string $corpId
+ * @param string $exten Origen de la llamada.
+ * @return array|null
+ */
+function getRestriction(string $dest, string $corpId, string $exten): ?array
+{
+    $countryCode = substr($dest, 0, 2);
+    $areaCode = substr($dest, 2, 2);
+    $corpRestriction = getRestrictionsCorp($corpId, $dest, $countryCode, $areaCode);
+    // Restriccion de corpo
+    if ($corpRestriction['permit'] == 0) {
+        return $corpRestriction;
+    }
+    $extenRestriction = getRestrictionsExten($corpId, $exten, $dest, $countryCode, $areaCode);
+    // Restriccion de exten
+    if ($extenRestriction['permit'] == 0) {
+        return $extenRestriction;
+    }
+    // Corpo usa pin
+    if ($corpRestriction['permit'] == 2) {
+        return $corpRestriction;
+    }
+    // Exten usa pin
+    if ($extenRestriction['permit'] == 2) {
+        return $extenRestriction;
+    }
+    // No tiene restricciones
+    return null;
+
 }
 
 ?>

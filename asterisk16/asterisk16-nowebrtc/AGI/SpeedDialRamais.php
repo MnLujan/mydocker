@@ -3,13 +3,7 @@
  * @brief Marcado rapido para Extension de una corporacion.
  */
 /* Funciones de la BD */
-require_once 'DBmock.php';
-
-//Get Information for PBX $Corp
-//Get information for 1000 linea 116
-//linea 740
-//Verifico Restricciones (User Y Corp) linea 770
-//Ejecuto Dial linea 790
+require_once 'Db.php';
 
 /**
  * @brief Funcion encargada de Ejecutar el marcado rapido por extension.
@@ -29,7 +23,7 @@ function SpeedDialRamais(CDR2 $CDR, string $exten, array $Corp)
 
     $CDR->step("Get information for PBX $corpID");
 
-    $user = GetInfoUser($caller, $Corp);
+    $user = getInfouser($caller, $corpID);
 
     if (!$user) {
         if ($CDR->isTransfered()) {
@@ -41,7 +35,7 @@ function SpeedDialRamais(CDR2 $CDR, string $exten, array $Corp)
 
     $CDR->step("Search speeddial $exten");
 
-    $res = GetSpeedDialsExten($exten, $user);
+    $res = GetSpeedDialsExten($exten, $caller, $corpID);
 
     if ($res != null) {
         $tmp = $res;
@@ -56,16 +50,15 @@ function SpeedDialRamais(CDR2 $CDR, string $exten, array $Corp)
 
     /* Restricciones User y Corp */
     $CDR->step("Get restrictions over $exten");
-    $restriction = GetRestriction($exten, $corpID, $user, $CDR);
+    $restriction = GetRestriction($exten, $corpID, $caller);
 
     //El archvio original loggea la query aca.
-   /**
+
     if ($restriction['restricted']) {
         $CDR->set_restriction($restriction['pattern']);
         $CDR->close('** CALL RESTRICTED **');
         exit;
     }
-    */
 
     $CDR->step("Calling " . $Corp['ID'] . '_' . $exten);
     $CDR->set_destination($Corp['ID'] . '_' . $exten);

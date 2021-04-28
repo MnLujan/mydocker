@@ -4,8 +4,9 @@
  * Cualquier cambio se ruega documentar.
  */
 
-require_once 'DBmock.php';
+require_once 'Db.php';
 require_once 'Utils.php';
+
 /**
  * @brief Funcion encargada de ejecutar una llamada interna en la misma corpo. En caso de que se para otra corporacion,
  * se realiza un exit inmediatamente.
@@ -17,15 +18,18 @@ function Dial(CDR2 $cdr, string $exten, array $corp): void
 {
 
     $cdr->step("Get information for $exten");
+    $caller = $cdr->get_pbx();
+    $callerAux = explode('_', $caller);
+    $caller = $callerAux[1];
 
-    //$delimeter = GetDelimeters($exten);
+    $delimeter = getDelimiters();
+
     $extenAux = explode('_', $exten);
     $exten = $extenAux[1];
-    $user = GetInfoUser($exten, $corp);
+    $user = getInfouser($exten, $callerAux[0]);
 
     $cdr->step("Get restrictions over $exten");
-    //$restriction = GetRestriction($exten, $corp['ID'], $user, $cdr);
-    $restriction['restricted'] = false;
+    $restriction = getRestriction($exten, $corp['ID'], $caller);
     if ($restriction['restricted']) {
         $cdr->set_restriction($restriction['pattern']);
         $cdr->close('** CALL RESTRICTED **');
