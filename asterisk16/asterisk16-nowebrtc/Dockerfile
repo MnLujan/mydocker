@@ -72,7 +72,7 @@ RUN cd /usr/src/ \
         && contrib/scripts/install_prereq install \
         && ./configure --libdir=/usr/lib --prefix=/usr --with-pjproject-bundled --with-jansson-bundled --with-ssl=ssl --with-srtp CFLAGS='-O2 -DNDEBUG' \
         && make menuselect/menuselect menuselect-tree menuselect.makeopts \
-        && menuselect/menuselect --disable BUILD_NATIVE --enable app_confbridge --disable app_fax --enable app_macro --enable codec_silk --enable format_mp3 --enable BETTER_BACKTRACES --disable FILE_STORAGE --enable ODBC_STORAGE --enable cdr_odbc --enable pbx_realtime\
+        && menuselect/menuselect --enable app_confbridge --disable app_fax --enable app_macro --enable codec_silk --enable format_mp3 --enable BETTER_BACKTRACES --disable FILE_STORAGE --enable ODBC_STORAGE --enable cdr_odbc --enable pbx_realtime\
         && make \
         && make install \
 	    && make samples \
