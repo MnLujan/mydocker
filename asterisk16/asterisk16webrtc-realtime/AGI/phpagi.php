@@ -364,7 +364,7 @@ class AGI
      */
     function exec($application, $options)
     {
-        if(is_array($options)) $options = join('|', $options);
+        if(is_array($options)) $options = join(',', $options);
         return $this->evaluate("EXEC $application $options");
     }
 
@@ -808,7 +808,7 @@ class AGI
      * @return array, see evaluate for return information. ['result'] is 0 if wait completes with no
      * digit received, otherwise a decimal value of the DTMF tone.  Use chr() to convert to ASCII.
      */
-    function wait_for_digit($timeout=-1)
+    function wait_for_digit(int $timeout = -1): array
     {
         return $this->evaluate("WAIT FOR DIGIT $timeout");
     }
@@ -1669,6 +1669,93 @@ class AGI
         return $ret;
     }
 
+    function evaluateDebug($command)
+    {
+        $broken = array('code'=>500, 'result'=>-1, 'data'=>'');
+
+        // write command
+        if(!@fwrite($this->out, trim($command) . "\n")) return $broken;
+        fflush($this->out);
+
+        // Read result.  Occasionally, a command return a string followed by an extra new line.
+        // When this happens, our script will ignore the new line, but it will still be in the
+        // buffer.  So, if we get a blank line, it is probably the result of a previous
+        // command.  We read until we get a valid result or asterisk hangs up.  One offending
+        // command is SEND TEXT.
+        $count = 0;
+        do
+        {
+            $str = trim(fgets($this->in, 4096));
+        } while($str == '' && $count++ < 5);
+
+        if($count >= 5)
+        {
+            //          $this->conlog("evaluate error on read for $command");
+            return $broken;
+        }
+
+        // parse result
+        $ret['code'] = substr($str, 0, 3);
+        $str = trim(substr($str, 3));
+
+        if($str[0] == '-') // we have a multiline response!
+        {
+            $count = 0;
+            $str = substr($str, 1) . "\n";
+            $line = fgets($this->in, 4096);
+            while(substr($line, 0, 3) != $ret['code'] && $count < 5)
+            {
+                $str .= $line;
+                $line = fgets($this->in, 4096);
+                $count = (trim($line) == '') ? $count + 1 : 0;
+            }
+            if($count >= 5)
+            {
+                //            $this->conlog("evaluate error on multiline read for $command");
+                return $broken;
+            }
+        }
+
+        $ret['result'] = null;
+        $ret['data'] = '';
+        if($ret['code'] != AGIRES_OK) // some sort of error
+        {
+            $ret['data'] = $str;
+            $this->conlog(print_r($ret, true));
+        }
+        else // normal AGIRES_OK response
+        {
+            $parse = explode(' ', trim($str));
+            $in_token = false;
+            foreach($parse as $token)
+            {
+                if($in_token) // we previously hit a token starting with ')' but not ending in ')'
+                {
+                    $ret['data'] .= ' ' . trim($token, '() ');
+                    if($token[strlen($token)-1] == ')') $in_token = false;
+                }
+                elseif($token[0] == '(')
+                {
+                    if($token[strlen($token)-1] != ')') $in_token = true;
+                    $ret['data'] .= ' ' . trim($token, '() ');
+                }
+                elseif(strpos($token, '='))
+                {
+                    $token = explode('=', $token);
+                    $ret[$token[0]] = $token[1];
+                }
+                elseif($token != '')
+                    $ret['data'] .= ' ' . $token;
+            }
+            $ret['data'] = trim($ret['data']);
+        }
+
+        // log some errors
+        if($ret['result'] < 0)
+            $this->conlog("$command returned {$ret['result']}");
+
+        return $ret;
+    }
     /**
      * Log to console if debug mode.
      *
@@ -1846,3 +1933,4 @@ function phpagi_error_handler($level, $message, $file, $line, $context)
 }
 
 $phpagi_error_handler_email = null;
+

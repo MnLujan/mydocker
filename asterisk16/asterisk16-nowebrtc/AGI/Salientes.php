@@ -14,16 +14,25 @@ require_once 'phpagi.php';
 require_once 'Db.php';
 
 /* Dialplans */
-//require_once 'SpeedDials.php';
+require_once 'SpeedDials.php';
 //require_once 'EntViaTransfer.php';
 require_once 'SpeedDialRamais.php';
 require_once 'Dial.php';
+require_once 'Trunks.php';
 
 /* Asterisk */
 $agi = new AGI();
 
 /* CDR */
 $cdr = new CDR2($agi);
+
+if ($cdr->is_closing()) {
+    $cdr->close();
+}
+
+if($cdr-> is_closed()){
+    exit;
+}
 
 /* Origen de la llamada */
 $callerID = $cdr->get_pbx();
@@ -33,9 +42,12 @@ $corpID = $cdr->get_Corp();
 
 /* Destino de la llamada */
 $exten = $cdr->get_destination();
+$regex = "^(\+|{$corpID}_)";
+$exten = preg_replace('/^[0-9]+_/', '', $exten);
+$exten = preg_replace('/' . $regex . '/', '', $exten);
 
-/* Separo la corpo del numero de extension que se quiere llamar */
-$exten_info = explode('_', $exten);
+/* Obtengo un array para determinar el plan a ejecutar. */
+$caller_info = explode('_', $callerID);
 
 $cdr->step("Get information for PBX $corpID");
 
@@ -50,15 +62,13 @@ if (!isCorp($corpID)) {
 $Corp = getCorpInfo($corpID);
 
 /* Audios */
+//@TODO Ver lo de las grabaciones
 Sounds($cdr, $Corp);
-
-//$arg = GetDelimeters($exten); //aca los pido para identificar que ejecutar.
-//$exten = $arg;
 
 $cdr->step("** Se Busca el plan a ejecutar **");
 
 /* Pido info del tipo de llamada. */
-$Call_Type = WhatIs($exten_info, $exten, $Corp);
+$Call_Type = WhatIs($caller_info, $exten, $Corp);
 
 /* Dependiendo del valor recibido, ejecuto la accion correspondiente */
 switch ($Call_Type) {
@@ -66,11 +76,13 @@ switch ($Call_Type) {
         //TransferCall($cdr);
         break;
     case "SpeedDial":
-        //$caller_exten = $caller_info[1];
-        //EjecSpeedDial($cdr, $caller_info, $exten, $Corp);
+        EjecSpeedDial($cdr, $exten, $Corp);
         break;
     case "SpeedDial2":
         SpeedDialRamais($cdr, $exten, $Corp);
+        break;
+    case "trunk":
+        DialTrunk($cdr, $exten, $corpID);
         break;
     default:
         Dial($cdr, $exten, $Corp);
