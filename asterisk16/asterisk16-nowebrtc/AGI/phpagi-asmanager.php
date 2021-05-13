@@ -1,4 +1,3 @@
-
 <?php
  /**
   * phpagi-asmanager.php : PHP Asterisk Manager functions

@@ -16,7 +16,7 @@ define('WEB_SOUNDS_FOLDER', '/var/www/sounds/');
 define('WEB_SOUNDS_DEBUG_FILE', 'logs/upload.html');
 define('LOGMON_USER', 'voipgroup');
 define('LOGMON_PASS', 'voipgroup123');
-define('AST_DEBUG', false);
+define('AST_DEBUG', true);
 define('AST_DEBUG_FILE', '/var/www/logs/console.html');
 define('OUTBOUNDVM_FOLDER', '/var/www/sounds/outboundvm/');
 
