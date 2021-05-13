@@ -397,6 +397,12 @@ function getRoutes(string $dest, string $corpID): ?array
 
 }
 
+function getServerfromTrunk(string $trunk){
+    $query = "SELECT ip, port FROM servers WHERE id = (SELECT `serId` FROM trunks WHERE `number` = '{$trunk}')";
+    $res = executeQuery($query);
+    return $res->fetch_assoc();
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 //                                                      ENTRANTES
 //---------------------------------------------------------------------------------------------------------------------

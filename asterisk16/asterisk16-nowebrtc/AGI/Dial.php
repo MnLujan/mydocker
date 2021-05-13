@@ -26,13 +26,14 @@ function Dial(CDR2 $cdr, string $exten, array $corp): void
     $user = getInfouser($caller, $corp['ID']);
 
     $cdr->step("Get restrictions over $exten");
+    
     $restriction = getRestriction($exten, $corp['ID'], $caller);
     if ($restriction['restricted']) {
         $cdr->set_restriction($restriction['pattern']);
         $cdr->close('** CALL RESTRICTED **');
         exit;
     }
-
+    
     $cdr->step("Calling " . $corp['ID'] . '_' . $exten);
     $cdr->set_destination($corp['ID'] . '_' . $exten);
     $cdr->set_variable('CALLERID(name)', $user['description']);

@@ -482,7 +482,7 @@ function Reminder(CDR2 $cdr, ?int $tmp, array $corp, string $caller)
  */
 function Forward(CDR2 $cdr, string $caller_exten, array $corp): void
 {
-    $user = GetInfoUser();
+    $user = GetInfoUser(caller_exten, corp['ID']);
     $option = "";
     if ($user['action'] == 'external_ring') {
         $cdr->exec('Playback', "call-forward&has-been-set-to");
@@ -706,22 +706,21 @@ function Wait2Digit(CDR2 $cdr, string $msg, string $digit, bool $data): array
 {
     if (!$data) {
         $cdr->exec('Background', $msg);
-        $res = $cdr->wait_for_digit(1800);
+        $res = $cdr->wait_for_digit(5000);
         if (chr($res['result']) == $digit) {
             return array('result' => true);
         } else {
             return array('result' => false);
         }
     } else {
-        $res = $cdr->exec('Background', $msg);
-        if ($res['result'] == $digit) {
-            $res = $cdr->wait_for_digit(1800);
+        $cdr->exec('Background', $msg);
+            $res = $cdr->wait_for_digit(5000);
             if ($res['result'] != $digit) {
                 return $res .= chr($res['result']);
             }
-        } else {
+         else {
             return $res .= chr($res['result']);
-        }
+         }
     }
 }
 

@@ -26,7 +26,17 @@ if [ ! -f "/etc/asterisk/manager.conf" ]; then
 cat > /etc/asterisk/manager.conf <<ENDLINE
 [general]
 enabled = yes
+port = 5038
+bindaddr = 0.0.0.0
 displayconnects=no ;only effects 1.6+
+
+[centrex]
+secret = centrex123
+read = system,call,log,verbose,agent,user,config,dtmf,reporting,cdr,dialplan
+write = system,call,agent,user,config,command,reporting,originate
+deny=0.0.0.0/0.0.0.0
+permit=127.0.0.1
+displayconnects = no
 
 ENDLINE
 fi
