@@ -7,7 +7,7 @@ require_once 'Db.php';
 require_once 'config.php';
 
 /**
- * @brief Funcion encargada de ejecutar el SpeedDial. @TODO agregar descripcion
+ * @brief Funcion encargada de ejecutar el SpeedDial correspondiente.
  * @param $cdr CDR2 de la clase webcdr
  * @param $exten string
  * @param $Corp array arreglo con informacion extraida de la BD.
@@ -41,7 +41,7 @@ function EjecSpeedDial(CDR2 $cdr, string $exten, array $Corp) //ver si devuelve 
         exit;
     }
 
-    SearchAction($cdr, $res, $restriction, $caller_exten, $Corp, $exten);
+    SearchAction($cdr, $res, $restriction, $caller_exten, $Corp);
 
 }
 
@@ -52,9 +52,8 @@ function EjecSpeedDial(CDR2 $cdr, string $exten, array $Corp) //ver si devuelve 
  * @param array|null $restricted
  * @param $caller_exten string
  * @param $Corp array
- * @param $exten string
  */
-function SearchAction(CDR2 $cdr, array $action, ?array $restricted, string $caller_exten, array $Corp, string $exten): void
+function SearchAction(CDR2 $cdr, array $action, ?array $restricted, string $caller_exten, array $Corp): void
 {
     $cdr->step("Entre a buscar la accion");
 
@@ -90,7 +89,7 @@ function SearchAction(CDR2 $cdr, array $action, ?array $restricted, string $call
             break;
         //capturar llamada, debe estar en el mismo grupo
         case 'Pickup':
-            PickUp($cdr, $tmp, $caller_exten, $Corp, $exten);
+            PickUp($cdr, $tmp, $caller_exten, $Corp);
             break;
         case 'sendvoicemail':
             SendVoiceMail($cdr, $Corp, $tmp);
@@ -121,7 +120,7 @@ function MeetMe(CDR2 $cdr, ?int $permit, array $Corp): void
     if ($permit == null) {
         $cdr->step("Go to conference hall");
         $cdr->set_destination('MeetMe');
-        $cdr->exec('MeetMe', $Corp['ID']);
+        $cdr->exec('ConfBridge', $Corp['ID']);
     } else {
         $cdr->close('** CALL RESTRICTED **');
     }
@@ -159,7 +158,6 @@ function ChanSpy(CDR2 $cdr, ?int $tmp, array $Corp): void
         $cdr->step("Playing request of number");
 
         //Solicito la extension a la que quiere llamar
-        //@TODO Verificar si se usa o como se usa. Falta if de la linea 230 de Salientes
         $cdr->exec('Background', 'extension'); // extension press-1 enter-ext-of-person
 
         $dest_numb = WaitForDigit($cdr, $Corp['extLen'], '0');
@@ -221,7 +219,7 @@ function Whisper(CDR2 $cdr, ?int $tmp, array $Corp): void
  * @param $Corp array
  * @param $exten string
  */
-function PickUp(CDR2 $cdr, ?int $tmp, string $caller_exten, array $Corp, string $exten): void
+function PickUp(CDR2 $cdr, ?int $tmp, string $caller_exten, array $Corp): void
 {
     $CorpID = $cdr->get_Corp();
 
@@ -236,7 +234,7 @@ function PickUp(CDR2 $cdr, ?int $tmp, string $caller_exten, array $Corp, string 
 
             $cdr->step("Pickup extension {$arg[1]}");
             $cdr->set_destination('Pickup');
-            $cdr->exec('pickupchan', 'PJSIP/' . $exten_pickup); //@TODO No va a funcionar por SIP(PJSIP).
+            $cdr->exec('pickupchan', 'PJSIP/' . $exten_pickup);
 
         } else {
 
@@ -338,7 +336,7 @@ function SendVoiceMail(CDR2 $cdr, array $Corp, int $tmp): void
         $wav_filepath .= $wav_filename;
         $wav_filename .= ".wav";
 
-        $extenID = GetExtID();
+        //$extenID = GetExtID();
         //@TODO Falta una funcion MySQL
 
         $outboundvm = GetOutBoundvm();
@@ -482,7 +480,8 @@ function Reminder(CDR2 $cdr, ?int $tmp, array $corp, string $caller)
  */
 function Forward(CDR2 $cdr, string $caller_exten, array $corp): void
 {
-    $user = GetInfoUser(caller_exten, corp['ID']);
+    $user = getInfouser($caller_exten, $corp['ID']);
+
     $option = "";
     if ($user['action'] == 'external_ring') {
         $cdr->exec('Playback', "call-forward&has-been-set-to");
@@ -706,21 +705,22 @@ function Wait2Digit(CDR2 $cdr, string $msg, string $digit, bool $data): array
 {
     if (!$data) {
         $cdr->exec('Background', $msg);
-        $res = $cdr->wait_for_digit(5000);
+        $res = $cdr->wait_for_digit(1800);
         if (chr($res['result']) == $digit) {
             return array('result' => true);
         } else {
             return array('result' => false);
         }
     } else {
-        $cdr->exec('Background', $msg);
-            $res = $cdr->wait_for_digit(5000);
+        $res = $cdr->exec('Background', $msg);
+        if ($res['result'] == $digit) {
+            $res = $cdr->wait_for_digit(1800);
             if ($res['result'] != $digit) {
                 return $res .= chr($res['result']);
             }
-         else {
+        } else {
             return $res .= chr($res['result']);
-         }
+        }
     }
 }
 
