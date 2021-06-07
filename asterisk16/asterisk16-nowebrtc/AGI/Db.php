@@ -14,14 +14,17 @@ include 'DbHelper.php';
 function isExten(string $exten, string $corpId): bool
 {
     $extenLenCorp = getExtenLenCorp($corpId);
-    if ($extenLenCorp == null) return false;
-    if ($extenLenCorp != strlen($exten)) return false;
-
-    $result = executeQuery("SELECT id FROM extens WHERE `number` =  '{$exten}' AND corpId = '{$corpId}'");
-    if ($result->fetch_array()) {
-        return true;
+    if (is_null($extenLenCorp) | $extenLenCorp != strlen($exten)) {
+        return false;
     }
-    return false;
+
+    $result = executeQuery("SELECT id FROM extens WHERE `number` = {$exten} AND corpId = '{$corpId}' AND enabled = 1");
+    if ($result->fetch_row()) {
+        return true;
+    } else {
+        return false;
+    }
+
 }
 
 /**
@@ -300,6 +303,41 @@ function deleteReminder(int $reminderId): bool
 }
 
 /**
+ * @brief Nos retorna el ID asociado al reminder.
+ * @param int $reminderID
+ * @return int
+ */
+function getCorpVM(int $reminderID): int
+{
+    $query = "SELECT e.corpID FROM outboundvm o LEFT JOIN extens e ON e.ID=o.extenID WHERE o.ID=$reminderID";
+    $res = executeQuery($query);
+    return $res->fetch_assoc()['corpID'];
+
+}
+
+/**
+ * @brief Retorna el nombre del archivo a reproducir.
+ * @param int $reminder_id
+ * @return string
+ */
+function getSoundVM(int $reminder_id): string
+{
+    $query = "SELECT sound FROM outboundvm WHERE ID='$reminder_id'";
+    $res = executeQuery($query);
+    return $res->fetch_assoc()['sound'];
+}
+
+/**
+ * @brief Actualiza el valor del reminder en la BD.
+ * @param int $reminder_id
+ */
+function updateReminder(int $reminder_id): void
+{
+    $query = "UPDATE outboundvm SET status=1 where ID='$reminder_id'";
+    executeQuery($query);
+}
+
+/**
  * @brief Permite setear un numero externo a una extension(ver SPEEDDIAL -> ENCAMINAR LLAMADA) Comparar con DIALCONTACTS AST16
  * @param string $number | numero externo a setear
  * @param string $exten
@@ -365,13 +403,13 @@ function isSpyEnabled(string $dest, string $corpID): bool
  * @brief Permite obtener un grupo de numeros para el SpeedDial "pickup"
  * @param string $exten
  * @param string $corpID
- * @return array|null
+ * @return bool|mysqli_result|null
  */
-function getNumbers(string $exten, string $corpID): ?array
+function getNumbers(string $exten, string $corpID)
 {
     $query = "SELECT e1.number FROM extens e1 WHERE e1.corpID='{$corpID}' AND e1.callgroup = (SELECT e.callgroup FROM extens e WHERE e.number='{$exten}' AND e.corpID='{$corpID}')";
     $res = executeQuery($query);
-    return $res->fetch_assoc();
+    return $res;
 
 }
 
@@ -395,12 +433,6 @@ function getRoutes(string $dest, string $corpID): ?array
     $res = executeQuery($query);
     return $res->fetch_assoc();
 
-}
-
-function getServerfromTrunk(string $trunk){
-    $query = "SELECT ip, port FROM servers WHERE id = (SELECT `serId` FROM trunks WHERE `number` = '{$trunk}')";
-    $res = executeQuery($query);
-    return $res->fetch_assoc();
 }
 
 //---------------------------------------------------------------------------------------------------------------------

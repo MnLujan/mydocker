@@ -7,7 +7,6 @@ function executeQuery($query)
     if ($mysqli->connect_errno) {
         return null;
     }
-
     return $mysqli->query($query);
 }
 
@@ -27,7 +26,7 @@ function executeInsert($query): int
     return $mysqli->insert_id;
 }
 
-function executeScalar(string $query): ?array
+function executeScalar($query): ?array
 {
     $mysqli = new mysqli("127.0.0.1", "centrex", "centrex123", "newcentrex");
 
@@ -36,8 +35,9 @@ function executeScalar(string $query): ?array
     }
 
     $res = $mysqli->query($query);
-    if (!is_null($res)) {
-        return $res->fetch_assoc();
+    $fila = $res->fetch_assoc();
+    if (!is_null($fila)) {
+        return $fila;
     }
     return null;
 }

@@ -217,7 +217,6 @@ function Whisper(CDR2 $cdr, ?int $tmp, array $Corp): void
  * @param int|null $tmp
  * @param $caller_exten string
  * @param $Corp array
- * @param $exten string
  */
 function PickUp(CDR2 $cdr, ?int $tmp, string $caller_exten, array $Corp): void
 {
@@ -237,16 +236,15 @@ function PickUp(CDR2 $cdr, ?int $tmp, string $caller_exten, array $Corp): void
             $cdr->exec('pickupchan', 'PJSIP/' . $exten_pickup);
 
         } else {
-
+            //@TODO VERIFICAR LOS NUMEROS.
             $cdr->step("Get information for2 $caller_exten");
 
             $res_pk = getNumbers($caller_exten, $Corp['ID']);
 
             $nums = array();
+
             /* Armo el arreglo de numeros a llamar */
-            $i = 0;
-            while ($nums_pk = $res_pk['i']) {
-                $i++;
+            while ($nums_pk = $res_pk->fetch_assoc()) {
                 array_push($nums, 'PJSIP/' . $Corp['ID'] . '_' . $nums_pk['number']);
             }
 
@@ -255,6 +253,7 @@ function PickUp(CDR2 $cdr, ?int $tmp, string $caller_exten, array $Corp): void
                 $cdr->set_destination('Pickup');
                 $cdr->exec('pickupchan', implode('&', $nums));
             } else {
+                $cdr->step("No match group numbers");
                 exit;
             }
         }
@@ -385,7 +384,7 @@ function Reminder(CDR2 $cdr, ?int $tmp, array $corp, string $caller)
     $dest_number = PromptData("vm-enter-num-to-call", $corp['extLen'], $cdr);
     $cdr->step("Dest. Number $dest_number");
 
-    if (!isExten($dest_number, $corp['extLen'], $corp['ID'])) {
+    if (!isExten($dest_number, $corp['ID'])) {
         $cdr->exec('Playback', 'you-dialed-wrong-number&vm-goodbye');
         exit;
     }
@@ -396,7 +395,7 @@ function Reminder(CDR2 $cdr, ?int $tmp, array $corp, string $caller)
     $reminderID = createReminder($caller, $corp['ID'], $dest_number, $date, 0, 0);
 
     if (!$reminderID) {
-        $cdr->step('Reminder no pudo guardar reminder en bd');
+        $cdr->step("Reminder no pudo guardar reminder en bd");
         $cdr->exec('Playback', 'an-error-has-occured&please-try-again-later');
         exit;
     }
@@ -410,11 +409,10 @@ function Reminder(CDR2 $cdr, ?int $tmp, array $corp, string $caller)
         $cdr->exec('Playback', 'an-error-has-occured&please-try-again-later');
         exit;
     }
-    //@TODO cambiar la ruta (verificar si esta bien en /tmp/)
 
     $user = getInfouser($caller, $corp['ID']);
 
-    $call_file = fopen("/home/{$filename}.call", "a+") or exit ("Unable to open file");
+    $call_file = fopen("/home/asterisk/{$filename}.call", "a+");
     fwrite($call_file, "Channel: PJSIP/{$corp['ID']}_$dest_number\n");
     fwrite($call_file, "CallerID: REMINDER <{$user['number']}> \n");
     fwrite($call_file, "Context: Voicemail\n");
@@ -424,31 +422,31 @@ function Reminder(CDR2 $cdr, ?int $tmp, array $corp, string $caller)
     fwrite($call_file, "Archive: Yes\n");
     fclose($call_file);
 
-    if (!touch("/home/{$filename}.call", $date->format('U'))) {
-        $cdr->step('Reminder no pudo editar el archivo call');
-        //$res = $mysqli->query("DELETE FROM outboundvm WHERE ID = $reminderID"); @TODO Se borra el Reminder
-        $cdr->log("SQL - query en Reminder");
+    if (!touch("/home/asterisk/{$filename}.call", $date->format('U'))) {
+        $cdr->step("Reminder no pudo editar el archivo call");
+        deleteReminder($reminderID); //Borro el recordatorio de la BD.
+        $cdr->log("SQL - Delete Reminder");
         unlink("/home/{$filename}.call");
-        exit("Unable to chango file datetime");
+        exit("Unable to change file datetime");
     }
 
-    system("sudo mv /tmp/{$filename}.call /var/spool/asterisk/outgoing");
+    system("mv /home/asterisk/{$filename}.call /var/spool/asterisk/outgoing");
 
-    $wav_filepath = WEB_SOUNDS_FOLDER . "reminders/Corp{$corp['ID']}}";
+    $wav_filepath = WEB_SOUNDS_FOLDER . "reminders/Corp{$corp['ID']}";
 
     if (!is_dir($wav_filepath)) {
-        mkdir($wav_filepath, 0755);
+        mkdir($wav_filepath, 0755, true);
     }
 
     $cancel = true;
     $cdr->step("Call recording into {$wav_filepath}/{$filename}.wav");
     $cdr->exec('Playback', 'vm-rec-temp');
     $asterisk = $cdr->get_agi();
-    $result_record = $asterisk->record_file("{$wav_filepath}/{$filename}", 'wav', '#', '180000', NULL, true, NULL);
+    $result_record = $asterisk->record_file("{$wav_filepath}/{$filename}", "wav", "#", "10000", NULL, true, NULL);
 
     if ($result_record['result'] != '48') { //recordar q el 48 ascii es 0
         $cdr->exec('Playback', 'to-listen-to-it&press-1');
-        $result = $cdr->wait_for_digit(1500);
+        $result = $cdr->wait_for_digit(3000);
 
         if (chr($result['result']) == '1') {
             $cdr->exec('Playback', "{$wav_filepath}/{$filename}");
@@ -465,7 +463,7 @@ function Reminder(CDR2 $cdr, ?int $tmp, array $corp, string $caller)
         $cdr->log("SQL - $query");
         //$res = $mysqli->query($query); @TODO Se borra el audio
         unlink("{$wav_filepath}/{$filename}.wav");
-    } else if (!chmod($wav_filepath . $filename . ".wav", 0644)) {
+    } else if (!chmod($wav_filepath."/".$filename . ".wav", 0644)) {
         $cdr->step("Reminder no pudo cambiar permisos del audio");
     }
 
@@ -586,10 +584,6 @@ function PromptData(string $promp, int $max_digit, CDR2 $cdr): string
 
         $res = $cdr->exec('Background', $promp); //por favor ingrese dato
 
-        if ($res['result'] != '0') {
-            $value = chr($res['result']);
-        }
-
         $value = WaitForDigit($cdr, $max_digit, '0');
 
         $cdr->step("PrompData input: $value");
@@ -598,24 +592,22 @@ function PromptData(string $promp, int $max_digit, CDR2 $cdr): string
             continue;
         }
 
+        /* Reproduzco los digitos ingresados */
         $cdr->exec('Playback', "you-have-dialed");
         $cdr->say_digits($value);
 
         $cdr->exec('Playback', "if-this-is-not-correct"); //no es correcto?
-        $result = $cdr->exec('Background', "press-1"); //presione 1
+        $res = $cdr->exec('Background', "press-1"); //presione 1
 
-        if (chr($result['result']) == '1') {
+        $result = $cdr->wait_for_digit(2500);
+        if (chr($result['result']) != '1') {
+            break;
+
+        } else {
             $value = '';
             continue;
         }
 
-        $result = $cdr->wait_for_digit();
-        if (chr($result['result']) == '1') {
-            $value = '';
-            continue;
-        }
-
-        break;
 
     } while ($intents < $max_intents);
 
@@ -699,28 +691,20 @@ function InputDate(CDR2 $cdr): DateTime
  * @param string $msg
  * @param string $digit
  * @param bool $data
- * @return array
+ * @return bool|string
  */
-function Wait2Digit(CDR2 $cdr, string $msg, string $digit, bool $data): array
+function Wait2Digit(CDR2 $cdr, string $msg, string $digit, bool $data): ?bool
 {
+    $cdr->exec('Background', $msg);
+    $res = $cdr->wait_for_digit(5500);
     if (!$data) {
-        $cdr->exec('Background', $msg);
-        $res = $cdr->wait_for_digit(1800);
         if (chr($res['result']) == $digit) {
-            return array('result' => true);
+            return true;
         } else {
-            return array('result' => false);
+            return false;
         }
     } else {
-        $res = $cdr->exec('Background', $msg);
-        if ($res['result'] == $digit) {
-            $res = $cdr->wait_for_digit(1800);
-            if ($res['result'] != $digit) {
-                return $res .= chr($res['result']);
-            }
-        } else {
-            return $res .= chr($res['result']);
-        }
+        return $res .= chr($res['result']);
     }
 }
 

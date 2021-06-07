@@ -2,13 +2,14 @@
 <?php
 /**
  * @brief Script de logica de negocios. Cualquier cambio realizado se ruega documentar.
+ * @version 1.0
  */
 
 /* Archivo de Config para extraer variables */
 require_once 'config.php';
 
 /* Utils */
-//require_once '../Utils/Utils.php';
+require_once 'Utils.php';
 require_once 'webcdr.php';
 require_once 'phpagi.php';
 require_once 'Db.php';
@@ -62,7 +63,6 @@ if (!isCorp($corpID)) {
 $Corp = getCorpInfo($corpID);
 
 /* Audios */
-//@TODO Ver lo de las grabaciones
 Sounds($cdr, $Corp);
 
 $cdr->step("** Se Busca el plan a ejecutar **");
@@ -84,9 +84,13 @@ switch ($Call_Type) {
     case "trunk":
         DialTrunk($cdr, $exten, $corpID);
         break;
-    default:
+    case "SalExten":
         Dial($cdr, $exten, $Corp);
         break;
+    default:
+        $cdr->step("** EXTEN DISABLED OR NOT FOUND **");
+        $cdr->close();
+        exit;
 }
 exit;
 ?>

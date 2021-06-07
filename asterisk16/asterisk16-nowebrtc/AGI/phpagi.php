@@ -738,7 +738,7 @@ class AGI
      * @param string $value
      * @return array, see evaluate for return information.
      */
-    function set_variable($variable, $value)
+    function set_variable(string $variable, string $value): array
     {
         $value = str_replace("\n", '\n', addslashes($value));
         return $this->evaluate("SET VARIABLE $variable \"$value\"");

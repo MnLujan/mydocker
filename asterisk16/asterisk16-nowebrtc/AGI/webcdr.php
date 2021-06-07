@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * Class CDR2 @TODO BUG en la corpo. Sacar o reemplazar "callid_sincorp", falla en voicemail.
+ */
 class CDR2
 {
     private $data;
@@ -21,24 +24,29 @@ class CDR2
     private $outboundvm_id;
     private $corp;
     private $callid_sincorp;
-    //@TODO reescribir la variable PBX, ahi va el contexto q es igual al dialplan. Pbx ponerle callid o number
+
+    /**
+     * CDR2 constructor.
+     * @param $agi
+     */
     function __construct(&$agi)
     {
+        require_once 'Db.php';
         $this->agi = &$agi;
         $this->pbx = $this->agi->request['agi_callerid'];
-        $callerID_info = explode('_', $this->pbx); //extraigo la extension de la corpo
-        $this->corp = $this->agi->get_variable('CONTEXT', true); //extraigo la corpo desde asterisk
-        $this->callid_sincorp = $callerID_info[1];
 
-        $this->callid = $this->get_variable('SIPCALLID');
+        $this->corp = $this->agi->get_variable('CONTEXT', true); //extraigo la corpo desde asterisk
+
+        $this->callid = $this->get_variable('CHANNEL(pjsip,call-id)');
         $this->channel = $this->get_variable('CHANNEL');
 
         if (preg_match('/\d+\_\d+/', $this->channel, $preg_result)) {
             $this->caller = $preg_result[0];
+            $callerID_info = explode('_', $this->caller);
+            $this->callid_sincorp = $callerID_info[1];
         } else {
             $this->caller = $this->get_variable('CALLERID(num)');
         }
-
         $this->cdruniqueid = $this->get_variable('CDR(uniqueid)');
         $this->dialed = $this->get_variable('EXTEN');
         $this->destination = $this->dialed;
@@ -51,7 +59,7 @@ class CDR2
         $this->trunk = '';
         $this->call_file = '';
         $this->outboundvm_id = '';
-        //$this->step("Procesing Call");
+
 
         if ($this->get_variable('ParentCallId') == null || $this->get_variable('ParentCallId') == '') {
             $this->agi->set_variable('__ParentCallId', $this->callid);
@@ -62,7 +70,6 @@ class CDR2
             $this->database_put('caller', $this->caller);
             $this->database_put('dialed', $this->dialed);
             $this->database_put('destination', $this->destination);
-            //$this->database_put('start', $this->start);
             $this->database_put('count', $this->count);
             $this->database_put('restriction', $this->restriction);
             $this->database_put('trunk', $this->trunk);
@@ -172,10 +179,10 @@ class CDR2
             if ($this->caller != '') {
                 $recordFile = date("YmdHis") . "_" . $this->caller . "_" . $this->destination . "_" . $this->cdruniqueid . ".wav";
                 $callFilePath = $this->database_get('call_file_path');
-                system("sudo mv {$callFilePath}{$this->get_record_file()}.wav {$callFilePath}{$recordFile}");
+                system("mv {$callFilePath}{$this->get_record_file()}.wav {$callFilePath}{$recordFile}");
                 $sql = "call create_CDRs('{$this->caller}','{$this->dialed}','{$this->destination}',0,0,'{$this->restriction}','{$this->result}','{$this->cdruniqueid}','{$this->callid}','{$this->trunk}','{$recordFile}','','');";
                 $this->log("SQL - $sql");
-                //$res = query($sql, __LINE__);
+                $res = executeQuery($sql);
             }
 
             $this->closed = true;
@@ -339,10 +346,6 @@ class CDR2
         return $this->pbx;
     }
 
-    function get_pbx2()
-    {
-        return $this->pbx2;
-    }
 
     function get_caller_alone()
     {
