@@ -15,6 +15,11 @@ require_once 'config.php';
  */
 function WhatIs(array $exten_info, string $destino, array $Corp): string
 {
+    /* Primero verifico que este habilitada la extension desde donde estoy llamando */
+    if (!isExten($exten_info[1], $Corp['ID'])) {
+        return '';
+    }
+
     /* Entrante Via Trasnfer */
     if (count($exten_info) == 1 && strlen($destino) == 2) {
         return "EntViaTransfer";
@@ -28,14 +33,12 @@ function WhatIs(array $exten_info, string $destino, array $Corp): string
         return "SpeedDial2";
 
         /* Saliente a una extension */
-    } else if (count($exten_info) == 1 && isExten($destino, $Corp['extLen'], $Corp['ID'])) {
-        //@TODO Se busco reproducir el escenario y no hubo resultado, sacar de ser neceasrio.
+    } else if (isExten($destino, $Corp['ID'])) {
         return "SalExten";
 
     } else if (strlen($destino) > 4) {
         return "trunk";
     } else {
-        //En el caso de que no sea ninguno, es una llamada comun
         return '';
     }
 

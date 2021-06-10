@@ -126,5 +126,17 @@ noload => res_pjsip_config_wizard.so
 ENDLINE
 fi
 
+echo "Reminders: "
+
+if [ ! -d "/home/asterisk/sounds" ]; then
+    cd /home/asterisk
+    mkdir sounds
+    chown asterisk:asterisk sounds
+    cd /
+    echo "Files readys..."
+else
+    echo "Directory exist"
+fi
+
 
 exec "$@"

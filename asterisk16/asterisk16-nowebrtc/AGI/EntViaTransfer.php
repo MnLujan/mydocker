@@ -4,8 +4,8 @@
  * documentar.
  */
 
-require_once '../DB/DBmock.php';
-require_once '../Utils/Utils.php';
+require_once 'Db.php';
+require_once 'Utils.php';
 
 /**
  * @brief Funcion encargada de ejecutar los comandos necesarios para Transferir una llamada entrante.

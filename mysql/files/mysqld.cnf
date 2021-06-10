@@ -1,8 +1,0 @@
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#+++            Actualizaciones necesarias en My.cnf                  +++
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-[mysqld]
-skip-name-resolve
-event_scheduler = ON
-bind-address = 0.0.0.0
-transaction_isolation = READ-UNCOMMITTED

@@ -32,14 +32,6 @@ services:
     depends_on: 
       - mysqldb
     privileged: true  
-
-  portainer:
-    container_name: portainer
-    image: portainer/portainer-ce
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock 
-      - /portainer_data:/data
-    network_mode: host
+    
 volumes: 
   mysql_data:

@@ -61,28 +61,31 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         wget \
         && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 
+#Instalo modulos del kernel necesarios para compilar DAHDI
+RUN apt-get install -y linux-headers-`uname -r`
+
 #Compilo Asterisk realtime
 RUN cd /usr/src/ \
         && wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${Asterisk}-current.tar.gz \
         && tar xfz asterisk-* \
         && rm -f asterisk-*.tar.gz \
-	    && mv asterisk-* asterisk \
+	&& mv asterisk-* asterisk \
         && cd asterisk \
         && contrib/scripts/get_mp3_source.sh \
         && contrib/scripts/install_prereq install \
-        && ./configure --libdir=/usr/lib --prefix=/usr --with-pjproject-bundled --with-jansson-bundled --with-ssl=ssl --with-srtp CFLAGS='-O2 -DNDEBUG' \
+        && ./configure --libdir=/usr/lib --prefix=/usr --with-pjproject-bundled --with-jansson-bundled --with-srtp CFLAGS='-O2 -DNDEBUG' \
         && make menuselect/menuselect menuselect-tree menuselect.makeopts \
-        && menuselect/menuselect --enable app_confbridge --disable app_fax --enable app_macro --enable codec_silk --enable format_mp3 --enable BETTER_BACKTRACES --disable FILE_STORAGE --enable ODBC_STORAGE --enable cdr_odbc --enable pbx_realtime\
+        && menuselect/menuselect --disable BUILD_NATIVE --enable-category MENUSELECT_APPS --disable chan_sip --enable BETTER_BACKTRACES --disable FILE_STORAGE --enable ODBC_STORAGE --enable cdr_odbc --enable pbx_realtime\
         && make \
         && make install \
-	    && make samples \
+	&& make samples \
         && make config \
-	    && cp -fra contrib/scripts/ast_tls_cert /usr/local/sbin/ast_tls_cert && mkdir -p /etc/asterisk/keys \
+	&& cp -fra contrib/scripts/ast_tls_cert /usr/local/sbin/ast_tls_cert && mkdir -p /etc/asterisk/keys \
         && echo "asterisk -rvvvvvvvvvv" > /usr/local/sbin/a \
-	    && chmod 777 -R /usr/local/sbin/ \
+        && chmod 777 -R /usr/local/sbin/ \
         && ldconfig \
-	    && rm -fr /etc/asterisk/res_odbc.conf \
-	    && rm -fr /etc/asterisk/manager.conf
+	&& rm -fr /etc/asterisk/res_odbc.conf \
+	&& rm -fr /etc/asterisk/manager.conf
 
 #G729 Codecs
 RUN  cd /usr/src \
@@ -114,9 +117,8 @@ RUN cd /usr/src \
         && cp codec_opus.so /usr/lib/asterisk/modules \
         && cp format_ogg_opus.so /usr/lib/asterisk/modules \
         && cp codec_opus_config-en_US.xml /var/lib/asterisk/documentation/thirdparty \
-        && rm -fr /usr/src/codec_opus*        
-
-
+        && rm -fr /usr/src/codec_opus*
+        
 #############################################################################################################
 #                                   Segunda etapa - Build Final
 #############################################################################################################
@@ -193,14 +195,17 @@ RUN dpkg -i mysql-community-client-plugins_8.0.23-1debian10_amd64.deb \
         && dpkg -i mysql-connector-odbc-dbgsym_8.0.22-1debian10_amd64.deb \
         && dpkg -i mysql-connector-odbc-setup_8.0.22-1debian10_amd64.deb\
         && dpkg -i mysql-connector-odbc-setup-dbgsym_8.0.22-1debian10_amd64.deb \
-        && rm /etc/odbcinst.ini
+        && rm /etc/odbcinst.ini\
+        && rm mysql-connector-odbc-setup_8.0.22-1debian10_amd64.deb mysql-connector-odbc-setup-dbgsym_8.0.22-1debian10_amd64.deb \
+                mysql-connector-odbc_8.0.22-1debian10_amd64.deb mysql-connector-odbc-dbgsym_8.0.22-1debian10_amd64.deb \
+                mysql-community-client-plugins_8.0.23-1debian10_amd64.deb
 
 ### Usuario asterisk
 RUN addgroup --gid 500 asterisk \
         && adduser --uid 500 --gid 500 --gecos "Asterisk User" --disabled-password asterisk 
 
 #Copio los archivos de config y binarios compilados anteriormente
-COPY ./config/ /etc
+COPY ./config/asterisk /etc/asterisk
 
 COPY --from=compiler --chown=asterisk:asterisk /usr/lib/libasterisk* /usr/lib/
 COPY --from=compiler --chown=asterisk:asterisk /usr/lib/asterisk/ /usr/lib/asterisk/
@@ -213,6 +218,14 @@ COPY --from=compiler /usr/local/sbin/a /usr/local/sbin/a
 
 #Copio los scripts de ejecucion
 COPY ./AGI/ /var/lib/asterisk/agi-bin/
+
+COPY ./config/sounds/ /var/lib/asterisk/sounds
+
+RUN cd /var/lib/asterisk/sounds \
+        && tar -zxf sounds.tar.gz \
+        && chown asterisk:asterisk *\
+        && rm sounds.tar.gz \
+        && cd /
 
 EXPOSE 5060 5061 5160 5161 8000 8088 8089 10000-20000/udp 10000-20000/tcp
 

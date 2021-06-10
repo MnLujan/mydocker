@@ -1,0 +1,14 @@
+version: '3.3'
+
+services: 
+    db:
+        container_name: mysqldb-test
+        image: mysql:5.7
+        environment: 
+            MYSQL_ROOT_PASSWORD: "*Q1w2e3"
+        volumes:
+            - mysql_data_57:/var/lib/mysql
+            - ./files:/docker-entrypoint-initdb.d
+        network_mode: host
+volumes: 
+    mysql_data_57:

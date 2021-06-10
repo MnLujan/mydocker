@@ -71,9 +71,7 @@ function DialTrunk(CDR2 $cdr, string $dest, string $corpID): void
         $cdr->exec('Ringing', '');
         $cdr->set_callerid($route['trunk']);
         $dest = preg_replace('/^\+/', '', $dest);
-        $ip = getServerfromTrunk($route['trunk']);
-        $cdr->exec('Dial', array('PJSIP/' . $route['trunk'] . '/sip:' . $dest. '@'.$ip['ip'].':'.$ip['port'], AGI_DIAL_TIMEOUT, 'eKTM(vsc-callid)'));
-        //@TODO verificar lo de la IP
+        $cdr->exec('Dial', array('PJSIP/' . $route['trunk'] . '/' . $dest, AGI_DIAL_TIMEOUT, 'eKTM(vsc-callid)'));
     }
     exit;
 }
