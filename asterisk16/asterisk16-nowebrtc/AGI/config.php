@@ -12,7 +12,7 @@ define('DB_BASE', 'newcentrex');
 define('LIST_CANT_ROWS', 30);
 define('SQL_DEBUG', false);
 define('SQL_DEBUG_FILE', '../logs/sql.html');
-define('WEB_SOUNDS_FOLDER', '/home/asterisk/sounds/');
+define('WEB_SOUNDS_FOLDER', '/var/www/sounds/');
 define('WEB_SOUNDS_DEBUG_FILE', 'logs/upload.html');
 define('LOGMON_USER', 'voipgroup');
 define('LOGMON_PASS', 'voipgroup123');

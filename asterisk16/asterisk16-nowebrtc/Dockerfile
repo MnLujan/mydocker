@@ -61,8 +61,6 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
         wget \
         && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 
-#Instalo modulos del kernel necesarios para compilar DAHDI
-RUN apt-get install -y linux-headers-`uname -r`
 
 #Compilo Asterisk realtime
 RUN cd /usr/src/ \
@@ -219,13 +217,7 @@ COPY --from=compiler /usr/local/sbin/a /usr/local/sbin/a
 #Copio los scripts de ejecucion
 COPY ./AGI/ /var/lib/asterisk/agi-bin/
 
-COPY ./config/sounds/ /var/lib/asterisk/sounds
-
-RUN cd /var/lib/asterisk/sounds \
-        && tar -zxf sounds.tar.gz \
-        && chown asterisk:asterisk *\
-        && rm sounds.tar.gz \
-        && cd /
+COPY ./config/sounds /var/lib/asterisk/
 
 EXPOSE 5060 5061 5160 5161 8000 8088 8089 10000-20000/udp 10000-20000/tcp
 

@@ -435,6 +435,74 @@ function getRoutes(string $dest, string $corpID): ?array
 
 }
 
+/**
+ * @brief Dicha funcion nos retorna el ivr a reproducir.
+ * @param string $id
+ * @return array|null
+ */
+function getIVR_action(string $id): ?array
+{
+    $query = "SELECT i.*,c.extLen FROM ivrs i JOIN corps c ON i.corpID = c.ID WHERE i.ID={$id}";
+    $res = executeQuery($query);
+    return $res->fetch_assoc();
+
+}
+
+/**
+ * @brief Nos devuelve la accion por default en tiempo.
+ * @param string $timeId
+ * @return array|null
+ */
+function timeActionDefault(string $timeId): ?array
+{
+    $sql = "SELECT `default` FROM timemain t WHERE t.ID=$timeID";
+    $res = executeQuery($sql);
+
+    return $res->fetch_assoc();
+}
+
+/**
+ * @brief Retorna la accion, si existe, para el tiempo actual.
+ * @param string $timeID
+ * @param string $curTime
+ * @param string $curDay
+ * @return array|null
+ */
+function getCurrentAction(string $timeID, string $curTime, string $curDay): ?array
+{
+    $query = "SELECT action FROM timeoptions t WHERE t.timeID=$timeID AND t.from < $curTime AND t.to > $curTime AND t.days LIKE '%$curDay%'";
+    $res = executeQuery($query);
+    return $res->fetch_assoc();
+}
+
+/**
+ * @param CDR2 $cdr
+ * @param array $data
+ * @param string $t
+ * @param string $q
+ * @param string $opt
+ * @param array $exten
+ */
+function insert_IVR(CDR2 $cdr, array $data, string $t, string $q, string $opt, array $exten)
+{
+    $sql = "INSERT INTO ivr_answers(cdruniqueid,callid,optionAnswer,dateAnswer,exten,ivr,corp,trunk,queue)
+							VALUES ('{$cdr->get_cdruniqueid()}','{$cdr->get_callid()}',{$opt},now(),'{$exten[0]}',{$data['ID']},{$data['corpID']},'{$t}',{$q})";
+    executeQuery($sql);
+}
+
+/**
+ * @brief
+ * @param array $datos
+ * @return array
+ */
+function getPesquisa(array $datos): array
+{
+    $sql = "select ID,name,sound,corpID from ivrs where ivr = '{$datos['ID']}' order by orderSequencial asc";
+    $res = executeQuery($sql);
+    return $res->fetch_assoc();
+}
+
+
 //---------------------------------------------------------------------------------------------------------------------
 //                                                      ENTRANTES
 //---------------------------------------------------------------------------------------------------------------------
@@ -475,7 +543,17 @@ function getQueue(string $queueId): ?array
     return executeScalar($query);
 }
 
-
+/**
+ * @brief Nos develve la informacion relacionada al tronco que llama.
+ * @param string $DID
+ * @return array|null
+ */
+function infoTrunk(string $DID): ?array
+{
+    $query = 'SELECT t.action,c.ID AS corp,c.monEnabled,c.monPath FROM trunks t LEFT JOIN corps c ON t.corpID=c.ID WHERE t.enabled=1 AND t.number=' . "'$DID'";
+    $res = executeQuery($query);
+    return $res->fetch_assoc();
+}
 
 
 

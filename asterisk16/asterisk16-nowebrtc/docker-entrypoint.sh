@@ -1,6 +1,7 @@
 #!/bin/bash
+#Martin Lujan <mlujan@voipgroup.com>
 
-echo "CHECK VOLUME's MOUNT"
+echo "CHECK VOLUME's MOUNT and configs!"
 
 if [ -z "$(ls -A /etc/asterisk)" ]; then
   cp -fra /etc/asterisk.org/* /etc/asterisk
@@ -21,6 +22,8 @@ if [ -z "$(ls -A /var/lib/asterisk/agi-bin)" ]; then
   cp -fra /var/lib/asterisk/agi-bin.org/* /var/lib/asterisk/agi-bin	
   chown asterisk:asterisk -R /var/lib/asterisk/agi-bin
 fi
+
+echo "Volumes ready..."
 
 if [ ! -f "/etc/asterisk/manager.conf" ]; then
 cat > /etc/asterisk/manager.conf <<ENDLINE
@@ -126,17 +129,25 @@ noload => res_pjsip_config_wizard.so
 ENDLINE
 fi
 
-echo "Reminders: "
+echo "Files ready..."
 
 if [ ! -d "/home/asterisk/sounds" ]; then
     cd /home/asterisk
     mkdir sounds
     chown asterisk:asterisk sounds
     cd /
-    echo "Files readys..."
+    echo "Directorio de Grav: /home/asterisk/sounds"
 else
-    echo "Directory exist"
+    echo "Directory exist in /home/asterisk"
 fi
 
+echo "Reminders ready..."
+
+if [ -e /var/lib/asterisk/sounds.tar.xz ]; then
+  tar -xf /var/lib/asterisk/sounds.tar.xz
+  rm -f /var/lib/asterisk/sounds.tar.xz
+fi
+
+echo "Sounds ready..."
 
 exec "$@"

@@ -11,7 +11,6 @@ require_once 'config.php';
  * @param $destino string
  * @param $Corp array con informacion de la corporacion.
  * @return string que infora el tipo de llamada que se queire realizar.
- * @TODO si no se agregan mas funciones, sacarla de y agregar a Salientes.
  */
 function WhatIs(array $exten_info, string $destino, array $Corp): string
 {
@@ -48,10 +47,16 @@ function WhatIs(array $exten_info, string $destino, array $Corp): string
  * @brief Configura los directorios de sonido y grabacion de existir.
  * @param CDR2 $cdr
  * @param array $Corp
+ * @param bool $ent
  */
-function Sounds(CDR2 $cdr, array $Corp): void
+function Sounds(CDR2 $cdr, array $Corp, bool $ent): void
 {
-    $Corpid = $cdr->get_Corp();
+    if (!$ent) {
+        $Corpid = $cdr->get_Corp();
+    } else {
+        $Corpid = $Corp['corp'];
+    }
+
     $moh_file = glob(WEB_SOUNDS_FOLDER . "Corp" . $Corpid . "/moh/" . "*");
     if (is_array($moh_file) && count($moh_file) > 0) {
         $cdr->set_variable('CHANNEL(musicclass)', 'Corp' . $Corpid);
@@ -124,7 +129,6 @@ function dialExten(string $exten, CDR2 $cdr, string $onbusy): void
     }
 
     $cdr->step("accion: $action");
-    //@TODO Completar, ver las tablas
     switch ($action) {
         case 'voicemail':
             $cdr->step("Redirect to VoiceMail");
@@ -147,15 +151,15 @@ function dialExten(string $exten, CDR2 $cdr, string $onbusy): void
 }
 
 /**
- * @brief Ejecucion de la acciones segun la informacion pasada por parametro.
- *   ACTIONS:
- *      IVR -> ivr## -> ivr.php?id=##
- *      Queue -> que## -> queue.php?id=##
- *      Exten -> ext## -> extension.php?id=##
- *      ExtenVM -> dvm## -> extensionVoiceMail.php?id=##
- *      Group -> gr## -> group.php?id=##
- *      Time -> tim## -> horarios.php?idCorp=##
- *      Colgar -> hng
+ * @brief Ejecucion de la acciones segun la informacion pasada por parametro. <br>
+ *      ACTIONS: <br>
+ *      IVR -> ivr## -> ivr.php?id=## <br>
+ *      Queue -> que## -> queue.php?id=##<br>
+ *      Exten -> ext## -> extension.php?id=##<br>
+ *      ExtenVM -> dvm## -> extensionVoiceMail.php?id=##<br>
+ *      Group -> gr## -> group.php?id=##<br>
+ *      Time -> tim## -> horarios.php?idCorp=##<br>
+ *      Colgar -> hng<br>
  *
  * @param CDR2 $cdr
  * @param string $data
@@ -171,18 +175,36 @@ function ExecAction(CDR2 $cdr, string $data): void
         case 'ivr':
             ExecIVR($cdr, $data);
             break;
-        case 'poll':
-            ExecPoll($cdr, $data);
-            break;
         case 'que':
             ExecQueue($cdr, $data);
+            break;
+        case 'ext':
+            $ext = substr($data, 3);
+            $cdr->step("Executing Exten: $ext");
+            dialExten($ext, $cdr, '');
+            break;
+        case 'dvm':
+            $exten = substr($data, 3);
+            $tmp2 = explode('_', $exten);
+            $cdr->step("Leave a VoiceMail");
+            $cdr->exec('VoiceMail', $exten . '@' . $tmp2[0]);
+            break;
+        case 'tim':
+            TimeOptions($cdr, $data);
+            break;
+        case 'int':
+            Integracion($cdr, $data);
+            break;
+        default:
+            $cdr->close("** ACTION NOT FOUND **");
+            break;
     }
-    //@TODO terminar
+    exit;
+
 }
 
 function Ring(CDR2 $cdr, string $exten, array $datos)
 {
-    //@TODO Ver la variable AGI_DIAL_TIMEOUT
     $caller = $cdr->get_pbx();
     $cdr->step("Calling Exten");
     $cdr->exec('Dial', array("PJSIP/$caller/$exten", AGI_DIAL_TIMEOUT, 'KktM(vsc-callid)'));
@@ -202,24 +224,14 @@ function ExecIVR(CDR2 $cdr, string $ivr): void
     $id = substr($ivr, 3);
     $cdr->step("Executing IVR: $id");
     $cdr->exec('Ringing', '');
-
-    if (IVRexist($id)) {
-        //require_once 'IVR.php';
-        //@TODO ver si se pide aca o antes. Escribir el archivo IVR.
-    } else {
-        $cdr->close('** IVR NOT FOUND **');
-    }
-}
-
-function ExecPoll(CDR2 $cdr, string $poll): void
-{
-    $id = substr($poll, 3);
-    $cdr->step("Executing IVR: $id");
-    $cdr->exec('Ringing', '');
-
-    if (IVRexist($id)) {
-        //require_once 'Encuestas.php';
-        //@TODO Ver si se pide aca o antes. Escribir dicho archivo
+    $data = getIVR_action($id);
+    if (!is_null($data)) {
+        require_once 'IVR.php';
+        if ($data['isPoll'] == '1') {
+            play_poll($cdr, $data);
+        } else {
+            play_ivr($cdr, $data);
+        }
     } else {
         $cdr->close('** IVR NOT FOUND **');
     }
@@ -234,7 +246,7 @@ function ExecQueue(CDR2 $cdr, string $queue): void
 {
     $id = substr($queue, 3);
     $qid = substr($queue, strpos($queue, '_') + 1);
-    $dataqueue = GetDataQueue($qid);
+    $dataqueue = getQueue($qid);
 
     $cdr->database_put('poll_queue', $qid);
     $cdr->step("Executing Queue: ($id) {$dataqueue['name']}");
@@ -268,6 +280,8 @@ function ExecQueue(CDR2 $cdr, string $queue): void
  * @param CDR2 $cdr
  * @param array $data
  * @param string $exten
+ * @TODO ESTA FUNCION DEBERA CAMBIARSE POR UNA FUNCION DE PJSIP.
+ * @TODO TAMBIEN VERIFICAR LA FUNCION "isRestricted"
  */
 function Dual_ring(CDR2 $cdr, array $data, string $exten): void
 {
@@ -282,14 +296,14 @@ function Dual_ring(CDR2 $cdr, array $data, string $exten): void
             dialExten($exten, $cdr, $data['onbusy']);
         }
     } else {
-        if (isExten($data['outer'], strlen($data['number']), $data['corpID'])) {
+        if (isExten($data['outer'], $data['corpID'])) {
 
-            $cdr->exec('Dial', array("SIP/$exten&SIP/{$data['corpID']}_{$data['outer']}", AGI_DIAL_TIMEOUT, 'KktM(vsc-callid)'));
+            $cdr->exec('Dial', array("PJSIP/$exten&PJSIP/{$data['corpID']}_{$data['outer']}", AGI_DIAL_TIMEOUT, 'KktM(vsc-callid)'));
 
         } else {
 
             $cdr->set_trunk($data['trunk']);
-            $cdr->exec('Dial', array("PJSIP/$exten&SIP/{$data['trunk']}/{$data['outer']}", AGI_DIAL_TIMEOUT, 'KktM(vsc-callid)'));
+            $cdr->exec('Dial', array("PJSIP/$exten&PJSIP/{$data['trunk']}/{$data['outer']}", AGI_DIAL_TIMEOUT, 'KktM(vsc-callid)'));
         }
     }
 }
@@ -299,6 +313,7 @@ function Dual_ring(CDR2 $cdr, array $data, string $exten): void
  * @param CDR2 $cdr
  * @param array $data
  * @param string $onbusy
+ * @TODO Corregir
  */
 function External_Ring(CDR2 $cdr, array $data, string $onbusy)
 {
@@ -312,7 +327,7 @@ function External_Ring(CDR2 $cdr, array $data, string $onbusy)
 
             $cdr->exec('Goto', array($data['corpID'], $data['outer'], 1));
 
-        } elseif (isExten($data['outer'], strlen($data['outer']), $data['corpID'])) {
+        } elseif (isExten($data['outer'], $data['corpID'])) {
 
             $cdr->exec('Dial', array("PJSIP/{$data['corpID']}_{$data['outer']}", AGI_DIAL_TIMEOUT, 'KktM(vsc-callid)'));
 
@@ -349,7 +364,6 @@ function wasAnswered(string $status): bool
 }
 
 
-// Comentar si no anda(no existe el metodo en dbmock)
 /**
  * @brief Procesa las restricciones y devuelve la restriccion que mas matchea
  * @param string $dest
@@ -383,5 +397,133 @@ function getRestriction(string $dest, string $corpId, string $exten): ?array
     return null;
 
 }
+
+/**
+ * @brief Ejecuta la accion "tim"
+ * @param CDR2 $cdr
+ * @param string $data
+ */
+function TimeOptions(CDR2 $cdr, string $data)
+{
+    $timeID = substr($data, 3);
+    $cdr->step("Executing Time: $timeID");
+    $curTime = date("Hi");
+    $curDay = date("D");
+
+    //Buscar accion por defecto
+    $default = timeActionDefault($timeID);
+
+    //buscar acciones para el horario actual
+    $timeCurrent = getCurrentAction($timeID, $curTime, $curDay);
+
+    if (!is_null($timeCurrent)) {
+
+        ExecAction($cdr, $timeCurrent['action']);
+
+    } else if (!is_null($default) && $default['default'] != '') {
+
+        ExecAction($cdr, $default['default']);
+
+    } else {
+        $cdr->close("** TIME ACTION NOT FOUND **");
+    }
+
+}
+
+/**
+ * @brief Ejecuta la integracion indicada desde la BD.
+ * @param CDR2 $cdr
+ * @param string $data
+ */
+function Integracion(CDR2 $cdr, string $data): void
+{
+    $cdr->step("implementalo paper");
+}
+
+
+/**
+ * @brief Funcion encargada de esperar que se marque el numero e informar sobre el mismo.
+ * @param $cdr CDR2 objeto de la clase webcdr.
+ * @param int $max_digit
+ * @param string $digit
+ * @return string Extension que se desea marcar.
+ */
+function WaitForDigit(CDR2 $cdr, int $max_digit, string $digit): string
+{
+    /* Si se setea el numero maximo de caracteres */
+
+    if ($max_digit != 0) {
+        $max_loop = $max_digit;
+    } else {
+        $max_loop = 4;
+    }
+    $no_loop = 0;
+    $dest_number = '';
+    while ($no_loop < $max_loop) {
+        $no_loop++;
+        $result = $cdr->wait_for_digit(5000);
+        if ($result['result'] != $digit) {
+            $dest_number .= chr($result['result']);
+            $cdr->step("$no_loop digito ingresado: $dest_number");
+        } else {
+            $cdr->step("$no_loop digito ingresado: Timeout");
+            $no_loop = $max_loop;
+        }
+    }
+    return $dest_number;
+}
+
+/**
+ * @brief Funcion encargada de buscar los audios de la corpo y reproducirlos.
+ * @param CDR2 $cdr
+ * @param string $num
+ * @param bool $check
+ * @return bool
+ * @TODO Poner querys
+ */
+function mediaServer(CDR2 $cdr, string $num, bool $check): bool
+{
+    $datos = executeQuery("Hola");
+    if (!$datos) {
+        return false;
+    }
+    $play = true;
+    /*
+     * aca iria lo chequear el callerid
+     */
+
+    if ($play) {
+        $cdr->step("Executing Media Server feature ($num)");
+        $cdr->exec('Progress', null);
+        $cdr->exec('Wait', '1');
+        $cdr->step("Playing {$datos['sound']}");
+        $cdr->exec('Playback', array('/var/www/sounds/' . $datos['sound'], 'noanswer'));
+    }
+
+    if (intval($num) < 200) {
+        $num = sip2isup($num);
+    }
+
+    $cdr->exec('Hangup', $num);
+    return true;
+}
+
+/**
+ * @brief Dependiendo de el error rebido, buscara el BD la causa correspondiente a dicho codigo.
+ * @param string $num
+ * @return int|mixed
+ */
+function sip2isup(string $num)
+{
+    $res = executeQuery("hola");
+    if ($res->fetch_assoc() == 1) {
+
+        return $res->fetch_assoc()['PSTNCauseCode'];
+
+    } else {
+        return intval($num);
+    }
+}
+
 
 ?>

@@ -16,7 +16,7 @@ require_once 'Db.php';
 
 /* Dialplans */
 require_once 'SpeedDials.php';
-//require_once 'EntViaTransfer.php';
+require_once 'Transfer.php';
 require_once 'SpeedDialRamais.php';
 require_once 'Dial.php';
 require_once 'Trunks.php';
@@ -63,7 +63,7 @@ if (!isCorp($corpID)) {
 $Corp = getCorpInfo($corpID);
 
 /* Audios */
-Sounds($cdr, $Corp);
+Sounds($cdr, $Corp, false);
 
 $cdr->step("** Se Busca el plan a ejecutar **");
 
@@ -73,7 +73,7 @@ $Call_Type = WhatIs($caller_info, $exten, $Corp);
 /* Dependiendo del valor recibido, ejecuto la accion correspondiente */
 switch ($Call_Type) {
     case "EntViaTransfer":
-        //TransferCall($cdr);
+        TransferCall($cdr, $exten, $Corp);
         break;
     case "SpeedDial":
         EjecSpeedDial($cdr, $exten, $Corp);

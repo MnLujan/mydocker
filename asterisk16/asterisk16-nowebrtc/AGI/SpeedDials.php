@@ -102,7 +102,11 @@ function SearchAction(CDR2 $cdr, array $action, ?array $restricted, string $call
             Forward($cdr, $caller_exten, $Corp);
             break;
         default:
-            $cdr->close('** SPEEDDIAL NOT FOUND **');
+            if (preg_match('/(?P<type>enqueue|login|logout)\_(?P<id>\d+\_\d+)/', $tmp2, $match)) {
+                Queue($cdr, $match);
+            } else {
+                $cdr->close('** SPEEDDIAL NOT FOUND **');
+            }
             break;
     }
 
@@ -268,6 +272,7 @@ function PickUp(CDR2 $cdr, ?int $tmp, string $caller_exten, array $Corp): void
  * @param $cdr CDR2
  * @param $Corp array
  * @param int $tmp
+ * @TODO Verificar SpeedDial. No esta terminado.
  */
 function SendVoiceMail(CDR2 $cdr, array $Corp, int $tmp): void
 {
@@ -294,7 +299,7 @@ function SendVoiceMail(CDR2 $cdr, array $Corp, int $tmp): void
                 $cdr->say_number($dest_numb);
                 $retry = false;
 
-                if (!IsExten($dest_numb, $Corp['exteLen'], $Corp['ID'])) {
+                if (!IsExten($dest_numb, $Corp['ID'])) {
                     $cdr->exec('Background', 'num-not-in-db');
                     $retry = true;
                     $dest_numb = '';
@@ -463,7 +468,7 @@ function Reminder(CDR2 $cdr, ?int $tmp, array $corp, string $caller)
         $cdr->log("SQL - $query");
         //$res = $mysqli->query($query); @TODO Se borra el audio
         unlink("{$wav_filepath}/{$filename}.wav");
-    } else if (!chmod($wav_filepath."/".$filename . ".wav", 0644)) {
+    } else if (!chmod($wav_filepath . "/" . $filename . ".wav", 0644)) {
         $cdr->step("Reminder no pudo cambiar permisos del audio");
     }
 
@@ -532,37 +537,105 @@ function Forward(CDR2 $cdr, string $caller_exten, array $corp): void
     }
 }
 
+/**
+ * @brief Funcion encargada de ejecutar el SpeedDial Queue
+ * @param CDR2 $cdr
+ * @param array $match
+ */
+function Queue(CDR2 $cdr, array $match): void
+{
+    $qid = substr($match['id'], strpos($match['id'], '_') + 1);
+    $data = getQueue($qid);
+    switch ($match['type']) {
+        case 'login':
+            loginQueue($cdr, $match, $data);
+            break;
+        case 'logout':
+            logoutQueue($cdr, $match, $data);
+            break;
+        case 'enqueue':
+            enQueue($cdr, $match, $data);
+            break;
+
+    }
+
+}
 
 /**
- * @brief Funcion encargada de esperar que se marque el numero e informar sobre el mismo.
- * @param $cdr CDR2 objeto de la clase webcdr.
- * @param int $max_digit
- * @param string $digit
- * @return string Extension que se desea marcar.
+ * @brief Login a la Queue
+ * @param CDR2 $cdr
+ * @param array $match
+ * @param array $data
  */
-function WaitForDigit(CDR2 $cdr, int $max_digit, string $digit): string
+function loginQueue(CDR2 $cdr, array $match, array $data): void
 {
-    /* Si se setea el numero maximo de caracteres */
+    $caller = $cdr->get_caller();
+    $cdr->step("Log in into Queue {$match['id']}({$data['name']})");
+    $cdr->exec('AddQueueMember', array($match['id'], "SIP/$caller"));
+    $cdr->step("........" . $cdr->get_variable('AQMSTATUS'));
+    switch ($cdr->get_variable('AQMSTATUS')) {
+        case "ADDED":
+            $cdr->exec('Playback', "agent-loginok");
+            break;
+        case "MEMBERALREADY":
+            $cdr->exec('Playback', "is-currently&in-the-queue");
+            break;
+        default:
+            $cdr->exec('Playback', "error");
+            break;
+    }
+    exit;
+}
 
-    if ($max_digit != 0) {
-        $max_loop = $max_digit;
-    } else {
-        $max_loop = 4;
+/**
+ * @brief Ejecucion del Logout de las Queue
+ * @param CDR2 $cdr
+ * @param array $match
+ * @param array $data
+ */
+function logoutQueue(CDR2 $cdr, array $match, array $data): void
+{
+    $caller = $cdr->get_caller();
+    $cdr->step("Log out from Queue {$match['id']}({$data['name']})");
+    $cdr->exec('RemoveQueueMember', array($match['id'], "SIP/$caller"));
+    $cdr->step("........" . $cdr->get_variable('RQMSTATUS'));
+    switch ($cdr->get_variable('RQMSTATUS')) {
+        case "REMOVED":
+            $cdr->exec('Playback', "agent-loggedoff");
+            break;
+        case "NOTINQUEUE":
+            $cdr->exec('Playback', "is-not-set&in-the-queue");
+            break;
+        default:
+            $cdr->exec('Playback', "error");
+            break;
     }
-    $no_loop = 0;
-    $dest_number = '';
-    while ($no_loop < $max_loop) {
-        $no_loop++;
-        $result = $cdr->wait_for_digit(5000);
-        if ($result['result'] != $digit) {
-            $dest_number .= chr($result['result']);
-            $cdr->step("$no_loop digito ingresado: $dest_number");
-        } else {
-            $cdr->step("$no_loop digito ingresado: Timeout");
-            $no_loop = $max_loop;
-        }
+    exit;
+}
+
+/**
+ * @brief Ejecucion de sonar la Queue
+ * @param CDR2 $cdr
+ * @param array $match
+ * @param array $data
+ */
+function enQueue(CDR2 $cdr, array $match, array $data)
+{
+    $cdr->step("Enqueue in ({$match['id']}) {$data['name']}");
+    $ring = 'r';
+    $file = glob(WEB_SOUNDS_FOLDER . "Queue" . $match['id'] . "/" . "*");
+    if (is_array($file) && count($file) > 0) {
+        $ring = '';
+        $cdr->exec('Progress',"");
     }
-    return $dest_number;
+    $applyTimeOut = $data['failovertimeout'] > 0 ? $data['failovertimeout'] : '';
+    $cdr->exec('Queue', array($match['id'], $ring . 'kKtT', null, null, $applyTimeOut));
+    $status = $cdr->get_variable('QUEUESTATUS');
+    $cdr->step("Queue result: $status");
+    if ($status == 'TIMEOUT' && $data['failoveraction'] != '') {
+        ExecAction($cdr, $data['failoveraction']);
+    }
+    exit;
 }
 
 /**

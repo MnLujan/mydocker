@@ -1,8 +1,5 @@
 <?php
 
-/**
- * Class CDR2 @TODO BUG en la corpo. Sacar o reemplazar "callid_sincorp", falla en voicemail.
- */
 class CDR2
 {
     private $data;
