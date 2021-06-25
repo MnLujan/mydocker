@@ -217,7 +217,9 @@ COPY --from=compiler /usr/local/sbin/a /usr/local/sbin/a
 #Copio los scripts de ejecucion
 COPY ./AGI/ /var/lib/asterisk/agi-bin/
 
-COPY ./config/sounds /var/lib/asterisk/
+RUN rm -Rf /var/lib/asterisk/sounds/en
+
+COPY ./config/sounds /var/lib/asterisk/sounds
 
 EXPOSE 5060 5061 5160 5161 8000 8088 8089 10000-20000/udp 10000-20000/tcp
 
